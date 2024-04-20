@@ -17,4 +17,8 @@ public class SceneScript : MonoBehaviour
         
     }
     
+    public void onQuitButton()
+    {
+        Application.Quit();
+    }
 }

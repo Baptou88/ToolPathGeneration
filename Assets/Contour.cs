@@ -116,4 +116,9 @@ public class Contour
         //}
     }
 
+    public void removeLastPoint()
+    {
+        points.RemoveAt(points.Count - 1);
+    }
+
 }

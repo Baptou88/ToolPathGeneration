@@ -4,6 +4,10 @@ using UnityEditor;
 using static Codice.Client.Commands.WkTree.WorkspaceTreeNode;
 using System.IO;
 using System;
+using System.Linq;
+using Unity.VisualScripting;
+using System.Security.Cryptography;
+using NUnit.Framework;
 
 [CustomEditor(typeof(ContourCreator))]
 public class ContourEditor : Editor
@@ -36,7 +40,8 @@ public class ContourEditor : Editor
         {
             Undo.RecordObject(creator, "Add segment");
             cuttingPath.positionCount++;
-            cuttingPath.SetPosition(cuttingPath.positionCount, mousePos);
+            cuttingPath.SetPosition(cuttingPath.positionCount-1, mousePos);
+            
             Contour.AddSegment(mousePos);
         }
 
@@ -81,62 +86,133 @@ public class ContourEditor : Editor
                 break;
             }
         }
+        Vector3 toolPos = Vector3.zero;
         switch (path[index].GetTypeGeom()) {
             case TypeGeom.Line:
             {
                 Line line = (Line)path[index];
-                Handles.color = Color.blue;
-                Handles.DrawSolidDisc(Vector2.Lerp(line.pta, line.ptb, tIndex),Vector3.forward,Contour.diameter);
+                
+                 toolPos = Vector2.Lerp(line.pta,line.ptb, tIndex);   
+                
                 break;
             }
-                case TypeGeom.Circle:
-                {
-                    Circle circle = (Circle)path[index]; 
-                    Handles.color= Color.blue;
-                    Handles.DrawSolidDisc(circle.Lerp(tIndex),Vector3.forward,Contour.diameter);
-                    break;
-                }
+            case TypeGeom.Circle:
+            {
+                Circle circle = (Circle)path[index]; 
+                
+                    toolPos = circle.Lerp(tIndex);
+                
+                break;
+            }
+        }
+        Handles.color = Color.blue;
+        Handles.DrawSolidDisc(toolPos, Vector3.forward, Contour.diameter);
+        if (creator.cylindre != null)
+        {
+            creator.cylindre.transform.position = toolPos;
         }
     }
 
     private void FindSelfCuttingIntersection()
     {
         pathN.Clear();
+
+        //tentative n°1 
+        //for (int i = 0; i < path.Count; i++)
+        //{
+        //    intersection.Clear();
+        //    for (int j = 0; j < i-1; j++)
+        //    {
+        //        intersection.Clear();
+        //        intersection = intersect.Intersect(path[i], path[j]);
+                
+        //        for (int k = 0; k < intersection.Count; k++)
+        //        {
+        //            Handles.color = Color.white;
+        //            Handles.DrawSolidDisc(intersection[k], Vector3.forward, .2f);
+        //            Handles.color = Color.black;
+        //            Handles.Label(intersection[k], "i " + i.ToString() + ", j " + j.ToString());
+
+
+                    
+        //        }
+        //        //cherche le plus petit i 
+        //        int firstIntersectInTraj = intersection[i];
+        //        foreach (var item in intersection)
+        //        {
+
+        //        }
+
+
+        //    }
+        //    if (intersection.Count == 0)
+        //    {
+        //        pathN.Add(path[i]);
+        //    }
+        //    else
+        //    {
+        //        //for (int l = j; l < i; l++)
+        //        //{
+        //        //   pathN.RemoveAt(l);
+        //        //}
+        //    }
+
+        //}
+
+
+        //tentative n°2
+        intersection.Clear();
+        int j2 = -1;
+        Vector2 ptintersection = Vector2.zero;
         for (int i = 0; i < path.Count; i++)
         {
-            intersection.Clear();
-            for (int j = 0; j < i-1; j++)
+            if (i < j2)
+            {
+                continue;
+            }
+            for (int j = path.Count-1; j > i+1; j--)
             {
                 intersection.Clear();
                 intersection = intersect.Intersect(path[i], path[j]);
-                
-                for (int k = 0; k < intersection.Count; k++)
+                if (intersection.Count > 0)
                 {
-                    Handles.color = Color.white;
-                    Handles.DrawSolidDisc(intersection[k], Vector3.forward, .2f);
-                    Handles.Label(intersection[k], "i " + i.ToString() + ", j " + j.ToString());
+                    Handles.color = Color.blue;
+                    Handles.DrawSolidDisc(intersection[0], Vector3.forward, 0.1f);
+                    ptintersection = intersection[0];
+                    j2 = j;
+                    break;
                 }
-
-                
+               
             }
-            if (intersection.Count == 0)
+            switch (path[i].GetTypeGeom())
             {
-                pathN.Add(path[i]);
-            }
-            else
-            {
-                //for (int l = j; l < i; l++)
-                //{
-                //    pathN.RemoveAt(l);
-                //}
-            }
+                case TypeGeom.Line:
+                    Line l = (Line)path[i].Clone();
+                    if (intersection.Count > 0)
+                    {
+                        l.ptb = ptintersection;
+                    }
+                    if (i == j2)
+                    {
+                        l.pta = ptintersection;
+                        j2 = -1;
+                    }
+                    pathN.Add(l);
 
+                    break;
+                default:
+                    pathN.Add(path[i]);
+                    break;
+            }
+            
         }
+
 
         if (Contour.PathN)
         {
             for (int i = 0; i < pathN.Count; i++)
             {
+                Handles.color = Color.magenta;
                 pathN[i].Draw();
             }
         }
@@ -363,6 +439,10 @@ public class ContourEditor : Editor
         //Debug.Log("e");
     }
 
+    public void removeLastPoint()
+    {
+        Contour.removeLastPoint();
+    }
     void OnEnable()
     {
         creator = (ContourCreator)target;
@@ -404,6 +484,11 @@ public abstract class MyClass
     abstract public TypeGeom GetTypeGeom();
 
     abstract public float Length();
+
+    public object Clone()
+    {
+        return this.MemberwiseClone();
+    }
 }
 
 public class Line : MyClass
@@ -614,7 +699,20 @@ public class Intersector
     public List<Vector2> Intersect(Circle circle1, Circle circle2)
     {
         List<Vector2> list = new List<Vector2>();
-
+        float d = Vector2.Distance(circle1.center, circle2.center);
+        //Debug.Log(d);
+        Debug.Log(circle2.radius);
+        if (d < circle1.radius + circle2.radius )
+        {
+            // 2 points
+            //Debug.Log("qkfsrojgkd");
+        }
+        if(Mathf.Abs(d - (circle1.radius + circle2.radius)) < 0.001)
+        {
+            // 1 point
+            Debug.Log("peqkfsrojgkd");
+            list.Add( Vector2.Lerp(circle1.center,circle2.center, circle1.radius / (circle1.radius + circle2.radius)));
+        }
         return list;
     }
 }

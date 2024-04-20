@@ -7,7 +7,7 @@ public class ContourCreator : MonoBehaviour
 {
 
     public LineRenderer cuttingPath;
-
+    public GameObject cylindre;
     public Contour contour;
 
     public void CreateContour()
