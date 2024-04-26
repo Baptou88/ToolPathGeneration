@@ -1,0 +1,4 @@
+repository "2D Curve Editor@Baptou_88@cloud"
+  path "/"
+    br "/main"
+    co "/main"

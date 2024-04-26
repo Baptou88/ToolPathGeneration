@@ -1,13 +1,8 @@
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
-using static Codice.Client.Commands.WkTree.WorkspaceTreeNode;
-using System.IO;
 using System;
-using System.Linq;
-using Unity.VisualScripting;
-using System.Security.Cryptography;
-using NUnit.Framework;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+
 
 [CustomEditor(typeof(ContourCreator))]
 public class ContourEditor : Editor
@@ -15,21 +10,45 @@ public class ContourEditor : Editor
 
     ContourCreator creator;
     Contour Contour;
-    public LineRenderer cuttingPath;
+    public LineRenderer topContourPath;
+    public LineRenderer toolPath;
+
     public Intersector intersect = new Intersector();
     List<Vector2> intersection = new();
 
-    public List<MyClass> path = new List<MyClass>();
+    public List<Geometry> path = new List<Geometry>();
 
-    public List<MyClass> pathN = new List<MyClass>();
+    public List<Geometry> pathN = new List<Geometry>();
 
     void OnSceneGUI()
     {
         Input();
         Draw();
-        afficherPosAtT(Contour.t);
+        if (Contour.basicPath)
+        {
+            Vector2 toolPos = GetPosAtT(path, Contour.t);
+            Handles.color = Color.yellow;
+            Handles.DrawWireDisc(toolPos, Vector3.forward, Contour.diameter);
+        }
+
+        if (Contour.PathN)
+        {
+            Vector2 toolPosN = GetPosAtT(pathN, Contour.t);
+            Handles.color = Color.magenta;
+            Handles.DrawWireDisc(toolPosN, Vector3.forward, Contour.diameter);
+        }
     }
 
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector();
+
+
+        if (GUILayout.Button("Reverse Path"))
+        {
+            creator.reversePath();
+        }
+    }
 
     void Input()
     {
@@ -39,40 +58,52 @@ public class ContourEditor : Editor
         if (guiEvent.type == EventType.MouseDown && guiEvent.button == 0 && guiEvent.shift)
         {
             Undo.RecordObject(creator, "Add segment");
-            cuttingPath.positionCount++;
-            cuttingPath.SetPosition(cuttingPath.positionCount-1, mousePos);
-            
+            topContourPath.positionCount++;
+            topContourPath.SetPosition(topContourPath.positionCount - 1, mousePos);
+
             Contour.AddSegment(mousePos);
         }
 
-        
-        
-         cuttingPath.loop = Contour.closed;
-        
-       
+
+
+        topContourPath.loop = Contour.closed;
+
+
     }
 
-    public float lengthContourN()
+    //public float lengthContourN()
+    //{
+
+    //    float length = 0.0f;
+    //    for (int i = 0; i < path.Count; i++)
+    //    {
+    //        length += path[i].Length();
+    //    }
+    //    return length;
+    //}
+
+    public float lengthContour(List<Geometry> pathe)
     {
 
         float length = 0.0f;
-        for (int i = 0; i < path.Count; i++)
+        for (int i = 0; i < pathe.Count; i++)
         {
-            length += path[i].Length();
+            length += pathe[i].Length();
         }
         return length;
     }
 
-    public void afficherPosAtT(float t)
+
+    public Vector2 GetPosAtT(List<Geometry> pathG, float t)
     {
-        float total = lengthContourN();
+        float total = lengthContour(pathG);
         float pos = 0;
         float nextPos = 0;
         int index = 0;
         float tIndex = 0;
-        for (int i = 0;i < path.Count;i++)
+        for (int i = 0; i < path.Count; i++)
         {
-            nextPos += path[i].Length() / total;
+            nextPos += pathG[i].Length() / total;
             if (t > nextPos)
             {
                 pos = nextPos;
@@ -82,85 +113,26 @@ public class ContourEditor : Editor
             {
                 index = i;
                 //Debug.Log(i);
-                tIndex = (t-pos) * total / path[i].Length();
+                tIndex = (t - pos) * total / pathG[i].Length();
                 break;
             }
         }
-        Vector3 toolPos = Vector3.zero;
-        switch (path[index].GetTypeGeom()) {
-            case TypeGeom.Line:
-            {
-                Line line = (Line)path[index];
-                
-                 toolPos = Vector2.Lerp(line.pta,line.ptb, tIndex);   
-                
-                break;
-            }
-            case TypeGeom.Circle:
-            {
-                Circle circle = (Circle)path[index]; 
-                
-                    toolPos = circle.Lerp(tIndex);
-                
-                break;
-            }
-        }
-        Handles.color = Color.blue;
-        Handles.DrawSolidDisc(toolPos, Vector3.forward, Contour.diameter);
-        if (creator.cylindre != null)
-        {
-            creator.cylindre.transform.position = toolPos;
-        }
+        Vector3 toolPos;
+
+        toolPos = pathG[index].Lerp(tIndex);
+        return toolPos;
+        //Handles.color = Color.yellow;
+        //Handles.DrawWireDisc(toolPos, Vector3.forward, Contour.diameter);
+        //if (creator.cylindre != null)
+        //{
+        //    creator.cylindre.transform.position = toolPos;
+        //}
+        //Handles.color = Color.blue;
     }
 
     private void FindSelfCuttingIntersection()
     {
         pathN.Clear();
-
-        //tentative n°1 
-        //for (int i = 0; i < path.Count; i++)
-        //{
-        //    intersection.Clear();
-        //    for (int j = 0; j < i-1; j++)
-        //    {
-        //        intersection.Clear();
-        //        intersection = intersect.Intersect(path[i], path[j]);
-                
-        //        for (int k = 0; k < intersection.Count; k++)
-        //        {
-        //            Handles.color = Color.white;
-        //            Handles.DrawSolidDisc(intersection[k], Vector3.forward, .2f);
-        //            Handles.color = Color.black;
-        //            Handles.Label(intersection[k], "i " + i.ToString() + ", j " + j.ToString());
-
-
-                    
-        //        }
-        //        //cherche le plus petit i 
-        //        int firstIntersectInTraj = intersection[i];
-        //        foreach (var item in intersection)
-        //        {
-
-        //        }
-
-
-        //    }
-        //    if (intersection.Count == 0)
-        //    {
-        //        pathN.Add(path[i]);
-        //    }
-        //    else
-        //    {
-        //        //for (int l = j; l < i; l++)
-        //        //{
-        //        //   pathN.RemoveAt(l);
-        //        //}
-        //    }
-
-        //}
-
-
-        //tentative n°2
         intersection.Clear();
         int j2 = -1;
         Vector2 ptintersection = Vector2.zero;
@@ -170,25 +142,36 @@ public class ContourEditor : Editor
             {
                 continue;
             }
-            for (int j = path.Count-1; j > i+1; j--)
+            for (int j = path.Count - 1; j > i + 1; j--)
             {
                 intersection.Clear();
                 intersection = intersect.Intersect(path[i], path[j]);
                 if (intersection.Count > 0)
                 {
+                    
+                    if (intersection.Count>1)
+                    {
+                         intersection = findNearestIntersectionPt(path[i], intersection);
+                    }
                     Handles.color = Color.blue;
-                    Handles.DrawSolidDisc(intersection[0], Vector3.forward, 0.1f);
+                    for (int k = 0; k < intersection.Count; k++)
+                    {
+                        Handles.DrawWireDisc(intersection[k], Vector3.forward, 0.1f);
+                        Handles.Label(intersection[k], k.ToString());
+                    }
                     ptintersection = intersection[0];
+                        
+                    
                     j2 = j;
                     break;
                 }
-               
+
             }
             switch (path[i].GetTypeGeom())
             {
                 case TypeGeom.Line:
                     Line l = (Line)path[i].Clone();
-                    if (intersection.Count > 0)
+                    if (intersection.Count > 0 && i < j2)
                     {
                         l.ptb = ptintersection;
                     }
@@ -200,11 +183,26 @@ public class ContourEditor : Editor
                     pathN.Add(l);
 
                     break;
+                case TypeGeom.Circle:
+                    Circle c = (Circle)path[i].Clone();
+                    
+                    if(intersection.Count > 0 && i !=j2)
+                    {
+                        // modifier le point de fin du cercle
+                        c.modifyEndPoint(ptintersection);
+                    }
+                    if(i == j2)
+                    {
+                        // modifier le point de debut du cercle
+                        c.modifyBeginPoint(ptintersection);
+                    }
+                    pathN.Add(c);
+                    break;
                 default:
                     pathN.Add(path[i]);
                     break;
             }
-            
+
         }
 
 
@@ -228,13 +226,13 @@ public class ContourEditor : Editor
             Handles.DrawLine(p, p2);
         }
         int numLines = Contour.closed ? Contour.points.Count : Contour.points.Count - 1;
-        for (int i = 0; i < numLines ; i++)
+        for (int i = 0; i < numLines; i++)
         {
-            
-            cuttingPath.SetPosition(i,Contour.points[i]);
-            
+
+            topContourPath.SetPosition(i, Contour.points[i]);
+
             Handles.color = Color.black;
-            if(i>= Contour.points.Count-1)
+            if (i >= Contour.points.Count - 1)
             {
                 Handles.DrawLine(Contour.points[i], Contour.points[0]);
 
@@ -243,44 +241,47 @@ public class ContourEditor : Editor
                 Vector3 vec3b = Contour.points[0];
                 vec3b.z = Contour.depth;
                 Handles.DrawLine(vec3a, vec3b);
-            } else
+            }
+            else
             {
-                Handles.DrawLine(Contour.points[i], Contour.points[i+1]);
+                Handles.DrawLine(Contour.points[i], Contour.points[i + 1]);
 
 
                 Vector3 vec3a = Contour.points[i];
                 vec3a.z = Contour.depth;
-                Vector3 vec3b = Contour.points[i+1];
+                Vector3 vec3b = Contour.points[i + 1];
                 vec3b.z = Contour.depth;
 
                 Handles.DrawLine(vec3a, vec3b);
             }
-            
-            
+
+
         }
 
-        Handles.color = Color.red;
+
         for (int i = 0; i < Contour.NumPoints; i++)
         {
+            if (i == 0)
+            {
+                Handles.color = Color.green;
+            }
+            else
+            {
+                Handles.color = Color.red;
+            }
             Vector2 newPos = Handles.FreeMoveHandle(Contour[i], .1f, Vector2.zero, Handles.CylinderHandleCap);
             if (Contour[i] != newPos)
             {
                 Undo.RecordObject(creator, "Move point");
                 Contour.MovePoint(i, newPos);
-                cuttingPath.SetPosition(i,newPos);
+                topContourPath.SetPosition(i, newPos);
             }
         }
 
-        //Handles.color = Color.blue;
-        //Vector2 tPoint = Vector2.Lerp(Contour.points[0], Contour.points[1], Contour.t);
-        //Handles.FreeMoveHandle(tPoint, .1f, Vector2.zero, Handles.CylinderHandleCap);
-    
-        //Handles.color = Color.green;
+
 
         Vector2 direction = (Contour.points[1] - Contour.points[0]);
-        Vector2 normal = new Vector2(-direction.y,direction.x).normalized;
-        //Vector2 pointOnPerpendicular = tPoint + normal * Contour.diameter;
-        //Handles.FreeMoveHandle(pointOnPerpendicular, .1f, Vector2.zero, Handles.CylinderHandleCap);
+        Vector2 normal = new Vector2(-direction.y, direction.x).normalized;
 
         //with tool offset
         Vector2 prevPoint = new Vector2();
@@ -288,28 +289,28 @@ public class ContourEditor : Editor
 
         path.Clear();
 
-        
+
         for (int i = 0; i < numLines; i++)
         {
             Vector2 previousPoint = i == 0 ? Contour.points[Contour.points.Count - 1] : Contour.points[i - 1];
             Vector2 Point = Contour.points[i];
             Vector2 nextPoint = i == Contour.points.Count - 1 ? Contour.points[0] : Contour.points[i + 1];
-            Vector2 nextnextPoint = Contour.points[(i+2) % Contour.points.Count];
+            Vector2 nextnextPoint = Contour.points[(i + 2) % Contour.points.Count];
 
-            
+
             direction = nextPoint - Point;
 
             if (Contour.offsetDirection == OffsetDir.Left)
             {
-                normal = new  Vector2(-direction.y, direction.x).normalized;  
+                normal = new Vector2(-direction.y, direction.x).normalized;
             }
             else
             {
                 normal = new Vector2(direction.y, -direction.x).normalized;
             }
-            
 
-           
+
+
             Handles.color = Color.yellow;
 
 
@@ -322,25 +323,29 @@ public class ContourEditor : Editor
                 if (i == 0 && Contour.closed)
                 {
                     Vector2 previousDirection = Point - previousPoint;
-                    
-                    Vector2 bissector = (direction.normalized + previousDirection.normalized).normalized;
-                    
-                    Vector2 bissectorNormal;
-                    if (Contour.offsetDirection == OffsetDir.Right)
+                    float angleprevDirection = (-1 * Vector2.SignedAngle(previousDirection, direction));
+                    if ((Contour.offsetDirection == OffsetDir.Left && angleprevDirection < 0) || (Contour.offsetDirection == OffsetDir.Right && angleprevDirection > 0) || !creator.SmoothConvexe )
                     {
-                        bissectorNormal = new(bissector.y, -bissector.x);
+
+                        Vector2 bissector = (direction.normalized + previousDirection.normalized).normalized;
+
+                        Vector2 bissectorNormal;
+                        if (Contour.offsetDirection == OffsetDir.Right)
+                        {
+                            bissectorNormal = new(bissector.y, -bissector.x);
+                        }
+                        else
+                        {
+                            bissectorNormal = new(-bissector.y, bissector.x);
+                        }
+                        //Handles.DrawLine(Point, Point + bissectorNormal);
+                        float angle2 = Vector2.Angle(bissector, previousDirection);
+                        float d = Contour.diameter / Mathf.Cos((2 * Mathf.PI / 360) * angle2);
+                        Vector2 p = Point + bissectorNormal * d;
+                        Vector2 direction3 = (p - prevPoint);
+                        //Handles.DrawSolidDisc(p, Vector3.forward, (float)0.2);
+                        newA = p;
                     }
-                    else
-                    {
-                        bissectorNormal = new(-bissector.y, bissector.x);
-                    }
-                    //Handles.DrawLine(Point, Point + bissectorNormal);
-                    float angle2 = Vector2.Angle(bissector, previousDirection);
-                    float d = Contour.diameter / Mathf.Cos((2 * Mathf.PI / 360) * angle2);
-                    Vector2 p = Point + bissectorNormal * d;
-                    Vector2 direction3 = (p - prevPoint);
-                    //Handles.DrawSolidDisc(p, Vector3.forward, (float)0.2);
-                    newA = p;
                 }
                 prevIsCircle = false;
                 prevPoint = newA;
@@ -348,63 +353,63 @@ public class ContourEditor : Editor
 
             Handles.color = Color.magenta;
 
-          
 
-                Vector2 direction2 = nextnextPoint - nextPoint;
-                float angle = (-1* Vector2.SignedAngle(direction,direction2));
 
-                Handles.Label(nextPoint,angle.ToString());
-               
-                if ((Contour.offsetDirection == OffsetDir.Left && angle > 0) || (Contour.offsetDirection == OffsetDir.Right && angle <0) )
+            Vector2 direction2 = nextnextPoint - nextPoint;
+            float angle = (-1 * Vector2.SignedAngle(direction, direction2));
+
+            //Handles.Label(nextPoint, angle.ToString());
+
+            if ((Contour.offsetDirection == OffsetDir.Left && angle > 0 && creator.SmoothConvexe) || (Contour.offsetDirection == OffsetDir.Right && angle < 0 && creator.SmoothConvexe))
+            {
+                path.Add(new Line(prevPoint, newB));
+                if (!Contour.closed && i == Contour.points.Count - 2)
                 {
-                    path.Add(new Line(prevPoint,newB));
-                    path.Add(new Circle(nextPoint, normal, -angle, Contour.diameter));
-                    
-                    prevPoint = newA;
-                    prevIsCircle = true;
-                } else
-                {
-                    Vector2 bissector = (direction.normalized + direction2.normalized).normalized;
-                    
-                    Vector2 bissectorNormal;
-                    if (Contour.offsetDirection == OffsetDir.Right)
-                    {
-                        bissectorNormal = new(bissector.y, -bissector.x);
-                    }
-                    else
-                    {
-                        bissectorNormal = new(-bissector.y, bissector.x);
-                    }
-                    float angle2 = Vector2.Angle(bissector,direction2);
-                    float d =  Contour.diameter / Mathf.Cos((2 * Mathf.PI/360)*angle2) ;
-                   
-                    Vector2 p = nextPoint + bissectorNormal * d;
 
-                    if (!Contour.closed && i == Contour.points.Count-2)
-                    {
-                    //p = nextPoint + normal * d;
-                    p = newB;
-                    }
-                    Vector2 direction3 = (p - prevPoint);
-
-                    if (Vector2.Dot(direction.normalized, direction3)< .0f)
-                    {
-                        Handles.color= Color.cyan;
-    
-                    }
-                    //Handles.DrawLine(prevPoint, p);
-                    path.Add(new Line(prevPoint, p));
-                    prevPoint = p;
                 }
-            //if (Contour.closed && i == Contour.points.Count -1)
-            //{
-                
-            //    if (path[0].GetTypeGeom() == TypeGeom.Line)
-            //    {
-            //        Line l = (Line)path[0];
-            //        l.pta = prevPoint;
-            //    }
-            //}
+                else
+                {
+                    path.Add(new Circle(nextPoint, normal, -angle, Contour.diameter));
+                }
+
+
+                prevPoint = newA;
+                prevIsCircle = true;
+            }
+            else
+            {
+                Vector2 bissector = (direction.normalized + direction2.normalized).normalized;
+
+                Vector2 bissectorNormal;
+                if (Contour.offsetDirection == OffsetDir.Right)
+                {
+                    bissectorNormal = new(bissector.y, -bissector.x);
+                }
+                else
+                {
+                    bissectorNormal = new(-bissector.y, bissector.x);
+                }
+                float angle2 = Vector2.Angle(bissector, direction2);
+                float d = Contour.diameter / Mathf.Cos((2 * Mathf.PI / 360) * angle2);
+
+                Vector2 p = nextPoint + bissectorNormal * d;
+
+                if (!Contour.closed && i == Contour.points.Count - 2)
+                {
+                    p = newB;
+                }
+                Vector2 direction3 = (p - prevPoint);
+
+                if (Vector2.Dot(direction.normalized, direction3) < .0f)
+                {
+                    Handles.color = Color.cyan;
+
+                }
+                //Handles.DrawLine(prevPoint, p);
+                path.Add(new Line(prevPoint, p));
+                prevPoint = p;
+            }
+
 
         }
 
@@ -423,20 +428,23 @@ public class ContourEditor : Editor
             }
         }
 
+        
+        for (int i = 0; i < path.Count; i++)
+        {
+            switch (path[i].GetTypeGeom())
+            {
+                case TypeGeom.Line:
+                    Line l = (Line)path[i];
 
-        //Line line1 = new(new Vector2(1, 0), new Vector2(3.1f, 0.1f));
-        //Line line2 = new(new Vector2(3, -1), new Vector2(3, 1));
-        //Handles.color = Color.blue;
-        //line1.Draw();
-        //line2.Draw();
-        //Debug.Log("r");
-        //List<Vector2> intersection1 = intersect.Intersect(line1, line2);
-        //for (int i = 0; i < intersection1.Count; i++)
-        //{
-        //    Debug.Log(intersection1[i]);
-        //    Handles.DrawSolidDisc(intersection1[i], Vector3.forward, .2f);
-        //}
-        //Debug.Log("e");
+                break;
+                case TypeGeom.Circle:
+                    Circle c = (Circle)path[i]; 
+                break;
+
+                default: break;
+
+            }
+        }
     }
 
     public void removeLastPoint()
@@ -452,136 +460,101 @@ public class ContourEditor : Editor
         }
         Contour = creator.contour;
 
-        if (creator.cuttingPath ==null)
+        if (creator.topContourPath == null)
         {
             Debug.Log("pas de line renderer");
         }
-        cuttingPath = creator.cuttingPath;
+        topContourPath = creator.topContourPath;
+
+        if (creator.toolPath == null)
+        {
+            Debug.Log("pas de line renderer");
+        }
+        toolPath = creator.toolPath;
 
 
-        Vector3[] points = new Vector3[Contour.points.Count] ;
-        cuttingPath.positionCount = Contour.points.Count;
-        
+
+        Vector3[] points = new Vector3[Contour.points.Count];
+        topContourPath.positionCount = Contour.points.Count;
+
         for (int i = 0; i < Contour.points.Count; i++)
         {
             points[i] = Contour.points[i];
         }
-        cuttingPath.SetPositions(points);
+        topContourPath.SetPositions(points);
     }
+
+    public List<Vector2> findNearestIntersectionPt(Geometry g, List<Vector2> p)
+    {
+        if (p.Count>2)
+        {
+            throw new NotImplementedException("trop de point d'intersections");
+        }
+        switch (g.GetTypeGeom())
+        {
+            case TypeGeom.Line:
+                Line l = (Line)g;
+                float d1 = Vector2.Distance(l.pta, p[0]);
+                float d2 = Vector2.Distance(l.pta, p[1]);
+                if (d1 > d2) 
+                {
+                    Vector2 temp = p[0];
+                    p.RemoveAt(0);
+                    p.Add(temp);
+                    return p;
+                }
+                return p;
+                
+
+            case TypeGeom.Circle:
+                Circle c = (Circle)g;
+                float a1 = Vector2.Angle(c.normal, p[0] - c.center);
+                float a2 = Vector2.Angle(c.normal, p[1] - c.center);
+                if (c.angle < 0) 
+                {
+                    if (a1 > a2)
+                    {
+                        Vector2 temp = p[0];
+                        p.RemoveAt(0);
+                        p.Add(temp);
+                        return p;
+                    }
+                    return p;
+                }
+                else
+                {
+                    if (a1 < a2)
+                    {
+                        Vector2 temp = p[0];
+                        p.RemoveAt(0);
+                        p.Add(temp);
+                    }
+                       return p;
+                }
+                
+            default:
+                throw new NotImplementedException();
+                
+        }
+        throw new NotImplementedException();
+    }
+
 }
 
 
-public enum TypeGeom
-{
-    None,
-    Line,
-    Circle
-}
-public abstract class MyClass
-{
 
-    abstract public void Draw();
-    abstract public TypeGeom GetTypeGeom();
 
-    abstract public float Length();
 
-    public object Clone()
-    {
-        return this.MemberwiseClone();
-    }
-}
-
-public class Line : MyClass
-{
-    public Vector2 pta;
-    public Vector2 ptb;
-    public Line(Vector2 pta, Vector2 ptb)
-    {
-        this.pta = pta;
-        this.ptb = ptb;
-    }
-    public override void Draw()
-    {
-        Handles.DrawLine(pta, ptb);
-    }
-    public Vector2 dir()
-    {
-        return ptb - pta;
-    }
-
-    public override TypeGeom GetTypeGeom()
-    {
-        return TypeGeom.Line;
-    }
-
-    public override float Length()
-    {
-        return Vector3.Distance(pta, ptb);
-    }
-}
-
-public class Circle : MyClass
-{
-    public Vector2 center;
-    public float radius;
-    float angle;
-    Vector2 normal;
-    public Circle(Vector2 center, Vector2 normal, float angle, float radius)
-    {
-        this.center = center;
-        this.radius = radius;
-        this.angle = angle;
-        this.normal = normal;
-    }
-
-    public override void Draw()
-    {
-        
-        Vector2 start = center + normal * radius;
-
-        Handles.DrawWireArc(center, Vector3.forward, normal, angle, radius, 0);
-
-       
-        
-        
-    }
-
-    public Vector2 endDirection ()
-    {
-        return (Quaternion.AngleAxis(angle, Vector3.forward) * normal).normalized * radius;
-    }
-    public Vector2 endPoint ()
-    {
-        return center + endDirection() ;
-    }
-    public Vector2 Lerp(float t)
-    {
-        Vector3 cent = center;
-        //Vector3 pointOnArc = cent + Quaternion.AngleAxis(angle * t, normal) * (Vector3.right * radius);
-        Vector3 pointOnArc = cent + radius*(Quaternion.AngleAxis(angle*t, Vector3.forward) * normal ).normalized;
-
-        //Vector3 pointOnArc = cent + Quaternion.AngleAxis(angle , Vector3.up) * (Vector3.right * radius);
-
-        return pointOnArc;
-    }
-    public override TypeGeom GetTypeGeom() { return TypeGeom.Circle; }
-
-    public override float Length()
-    {
-        
-        return Mathf.PI * radius * Mathf.Abs(angle) / 180;
-    }
-}
 
 public class Intersector
 {
-    public List<Vector2> Intersect(MyClass m1,MyClass m2)
+    public List<Vector2> Intersect(Geometry m1, Geometry m2)
     {
         if (m1 is Line)
         {
             if (m2 is Line)
             {
-                return Intersect((Line)m1, (Line)m2); 
+                return Intersect((Line)m1, (Line)m2);
             }
             else
             {
@@ -601,7 +574,7 @@ public class Intersector
                 return Intersect((Circle)m1, (Circle)m2);
             }
         }
-        
+
     }
     public List<Vector2> Intersect(Line l1, Line l2)
     {
@@ -646,7 +619,7 @@ public class Intersector
 
             if (t > 0 && t < 1 && u > 0 && u < 1)
             {
-                list.Add ( l1.pta + t * dir1);
+                list.Add(l1.pta + t * dir1);
             }
         }
         return list;
@@ -673,15 +646,20 @@ public class Intersector
             if (t1 >= 0 && t1 <= 1)
             {
                 Vector2 intersectionPoint1 = line.pta + t1 * segmentDir;
+                if (PointisInArcCircle(circle,intersectionPoint1))
+                {
+                    list.Add(intersectionPoint1);
+                }
                 
-                list.Add(intersectionPoint1);
             }
 
             if (t2 >= 0 && t2 <= 1)
             {
                 Vector2 intersectionPoint2 = line.pta + t2 * segmentDir;
-
-                list.Add(intersectionPoint2);
+                if (PointisInArcCircle(circle,intersectionPoint2))
+                {
+                    list.Add(intersectionPoint2);
+                }
             }
         }
         else
@@ -699,20 +677,68 @@ public class Intersector
     public List<Vector2> Intersect(Circle circle1, Circle circle2)
     {
         List<Vector2> list = new List<Vector2>();
+        
         float d = Vector2.Distance(circle1.center, circle2.center);
-        //Debug.Log(d);
-        Debug.Log(circle2.radius);
-        if (d < circle1.radius + circle2.radius )
+
+        if (d < circle1.radius + circle2.radius)
         {
             // 2 points
-            //Debug.Log("qkfsrojgkd");
+            double a = (circle1.radius * circle1.radius - circle2.radius * circle2.radius + d * d) / (2 * d);
+            double h = Math.Sqrt(circle1.radius * circle1.radius - a * a);
+
+            // Find P2.
+            double cx2 = circle1.center.x + a * (circle2.center.x - circle1.center.x) / d;
+            double cy2 = circle1.center.y + a * (circle2.center.y - circle1.center.y) / d;
+
+            // Get the points P3.
+            Vector2 intersection1 = new Vector2((float)(cx2 + h * (circle2.center.y - circle1.center.y) / d), (float)(cy2 - h * (circle2.center.x - circle1.center.x) / d));
+            Vector2 intersection2 = new Vector2((float)(cx2 - h * (circle2.center.y - circle1.center.y) / d), (float)(cy2 + h * (circle2.center.x - circle1.center.x) / d));
+
+            if (PointisInArcCircle(circle1,intersection1))
+            {
+                list.Add(intersection1);
+            }
+            if (PointisInArcCircle(circle1, intersection2))
+            {
+                list.Add(intersection2);
+            }
+
+
         }
-        if(Mathf.Abs(d - (circle1.radius + circle2.radius)) < 0.001)
+        if (Mathf.Abs(d - (circle1.radius + circle2.radius)) < 0.001)
         {
             // 1 point
-            Debug.Log("peqkfsrojgkd");
-            list.Add( Vector2.Lerp(circle1.center,circle2.center, circle1.radius / (circle1.radius + circle2.radius)));
+
+            list.Add(Vector2.Lerp(circle1.center, circle2.center, circle1.radius / (circle1.radius + circle2.radius)));
         }
         return list;
     }
+
+    public bool PointisInArcCircle(Circle c, Vector2 p)
+    {
+        
+        float angleDebut = Vector2.SignedAngle(c.normal,  p-c.center);
+        float angleFin = Vector2.SignedAngle(c.endDirection(), p-c.center);
+
+        //Handles.DrawLine(c.center, c.center + c.endDirection());
+        //Debug.Log(angleFin + " " + angleDebut);
+        //return true;
+        if (c.angle > 0)
+        {
+            if (angleDebut < c.angle && angleFin < c.angle)
+            {
+                return true;
+            }
+            return false;
+        }
+        else
+        {
+            if (angleDebut > c.angle && angleFin > c.angle)
+            {
+                return true;
+            }
+            return false;
+        }
+    }
 }
+

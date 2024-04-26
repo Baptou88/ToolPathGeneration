@@ -36,6 +36,7 @@ public class Contour
     public bool selfCuttingIntersecr = false;
     [SerializeField]
     public bool basicPath = true;
+    
     [SerializeField]
     public bool PathN = false;
     public Contour(Vector2 centre)
@@ -119,6 +120,7 @@ public class Contour
     public void removeLastPoint()
     {
         points.RemoveAt(points.Count - 1);
+        
     }
 
 }
