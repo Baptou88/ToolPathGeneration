@@ -275,7 +275,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!81 &519420029
 AudioListener:
   m_ObjectHideFlags: 0
@@ -363,7 +363,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CameraSpeed: 5
-  cam: {fileID: 0}
+  cam: {fileID: 519420031}
 --- !u!1 &698556666
 GameObject:
   m_ObjectHideFlags: 0
@@ -535,16 +535,17 @@ MonoBehaviour:
     - {x: 0, y: 0}
     - {x: 0, y: 2}
     - {x: 3, y: 2}
-    - {x: 4.12651, y: 3.689648}
-    - {x: -1.1638994, y: 5.717817}
-    - {x: -1.0085377, y: 3.0713885}
-    - {x: -4.947906, y: 2.313414}
-    - {x: -3.8415542, y: 0.47323608}
+    - {x: 3.764354, y: 3.6217437}
+    - {x: -0.5398607, y: 5.211137}
+    - {x: -0.43089426, y: 2.793913}
+    - {x: -5.0757313, y: 2.368196}
+    - {x: -5.3033457, y: 0.83486354}
     depth: -5
-    closed: 1
-    t: 0.579
+    forceClosed: 0
+    t: 0
     offsetDirection: 0
-    diameter: 0.77
+    startVertex: 0
+    diameter: 0.48
     selfCuttingIntersecr: 1
     basicPath: 1
     PathN: 1
@@ -1571,11 +1572,11 @@ LineRenderer:
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 2, z: 0}
   - {x: 3, y: 2, z: 0}
-  - {x: 4.12651, y: 3.689648, z: 0}
-  - {x: -1.1638994, y: 5.717817, z: 0}
-  - {x: -1.0085377, y: 3.0713885, z: 0}
-  - {x: -4.947906, y: 2.313414, z: 0}
-  - {x: -3.8415542, y: 0.47323608, z: 0}
+  - {x: 3.764354, y: 3.6217437, z: 0}
+  - {x: -0.5398607, y: 5.211137, z: 0}
+  - {x: -0.43089426, y: 2.793913, z: 0}
+  - {x: -5.0757313, y: 2.368196, z: 0}
+  - {x: -5.3033457, y: 0.83486354, z: 0}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 0.11119727
@@ -1633,7 +1634,7 @@ LineRenderer:
     generateLightingData: 0
   m_MaskInteraction: 0
   m_UseWorldSpace: 0
-  m_Loop: 1
+  m_Loop: 0
   m_ApplyActiveColorSpace: 1
 --- !u!4 &1971797695
 Transform:

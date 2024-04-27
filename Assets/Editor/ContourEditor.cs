@@ -18,7 +18,7 @@ public class ContourEditor : Editor
 
     public List<Geometry> path = new List<Geometry>();
 
-    public List<Geometry> pathN = new List<Geometry>();
+    public List<Geometry> pathCorrected = new List<Geometry>();
 
     void OnSceneGUI()
     {
@@ -33,7 +33,7 @@ public class ContourEditor : Editor
 
         if (Contour.PathN)
         {
-            Vector2 toolPosN = GetPosAtT(pathN, Contour.t);
+            Vector2 toolPosN = GetPosAtT(pathCorrected, Contour.t);
             Handles.color = Color.magenta;
             Handles.DrawWireDisc(toolPosN, Vector3.forward, Contour.diameter);
         }
@@ -66,7 +66,7 @@ public class ContourEditor : Editor
 
 
 
-        topContourPath.loop = Contour.closed;
+        topContourPath.loop = Contour.forceClosed;
 
 
     }
@@ -132,7 +132,7 @@ public class ContourEditor : Editor
 
     private void FindSelfCuttingIntersection()
     {
-        pathN.Clear();
+        pathCorrected.Clear();
         intersection.Clear();
         int j2 = -1;
         Vector2 ptintersection = Vector2.zero;
@@ -180,7 +180,7 @@ public class ContourEditor : Editor
                         l.pta = ptintersection;
                         j2 = -1;
                     }
-                    pathN.Add(l);
+                    pathCorrected.Add(l);
 
                     break;
                 case TypeGeom.Circle:
@@ -196,22 +196,34 @@ public class ContourEditor : Editor
                         // modifier le point de debut du cercle
                         c.modifyBeginPoint(ptintersection);
                     }
-                    pathN.Add(c);
+                    pathCorrected.Add(c);
                     break;
                 default:
-                    pathN.Add(path[i]);
+                    pathCorrected.Add(path[i]);
                     break;
             }
 
         }
 
+        Vector2 normal = pathCorrected[0].getNormal(Contour.offsetDirection).normalized;
+        switch (pathCorrected[0].GetTypeGeom())
+        {
+            case TypeGeom.Line:
+                Line l = (Line)pathCorrected[0];
+                Handles.color = Color.cyan;
+                Handles.DrawLine(l.pta, l.pta + normal * 1);
+            break;
+            default:
+
+            break;
+        }
 
         if (Contour.PathN)
         {
-            for (int i = 0; i < pathN.Count; i++)
+            for (int i = 0; i < pathCorrected.Count; i++)
             {
                 Handles.color = Color.magenta;
-                pathN[i].Draw();
+                pathCorrected[i].Draw();
             }
         }
     }
@@ -225,7 +237,7 @@ public class ContourEditor : Editor
             Handles.color = Color.black;
             Handles.DrawLine(p, p2);
         }
-        int numLines = Contour.closed ? Contour.points.Count : Contour.points.Count - 1;
+        int numLines = Contour.forceClosed ? Contour.points.Count : Contour.points.Count - 1;
         for (int i = 0; i < numLines; i++)
         {
 
@@ -258,7 +270,7 @@ public class ContourEditor : Editor
 
         }
 
-
+        // affiche les points du contour et gere leurs deplacements
         for (int i = 0; i < Contour.NumPoints; i++)
         {
             if (i == 0)
@@ -268,8 +280,10 @@ public class ContourEditor : Editor
             else
             {
                 Handles.color = Color.red;
+
             }
             Vector2 newPos = Handles.FreeMoveHandle(Contour[i], .1f, Vector2.zero, Handles.CylinderHandleCap);
+            
             if (Contour[i] != newPos)
             {
                 Undo.RecordObject(creator, "Move point");
@@ -290,12 +304,18 @@ public class ContourEditor : Editor
         path.Clear();
 
 
-        for (int i = 0; i < numLines; i++)
+        for (int i = 0 ; i < numLines ; i++)
         {
-            Vector2 previousPoint = i == 0 ? Contour.points[Contour.points.Count - 1] : Contour.points[i - 1];
-            Vector2 Point = Contour.points[i];
-            Vector2 nextPoint = i == Contour.points.Count - 1 ? Contour.points[0] : Contour.points[i + 1];
-            Vector2 nextnextPoint = Contour.points[(i + 2) % Contour.points.Count];
+            //Vector2 previousPoint = i == 0 ? Contour.points[Contour.points.Count - 1] : Contour.points[i - 1];
+            //Vector2 Point = Contour.points[i];
+            //Vector2 nextPoint = i == Contour.points.Count - 1 ? Contour.points[0] : Contour.points[i + 1];
+            //Vector2 nextnextPoint = Contour.points[(i + 2) % Contour.points.Count];
+
+            
+            Vector2 previousPoint =     Contour.points[(i - 1 + Contour.points.Count + Contour.startVertex) % Contour.points.Count];
+            Vector2 Point =             Contour.points[(i + 0 + Contour.points.Count + Contour.startVertex) % Contour.points.Count];
+            Vector2 nextPoint =         Contour.points[(i + 1 + Contour.points.Count + Contour.startVertex) % Contour.points.Count];
+            Vector2 nextnextPoint =     Contour.points[(i + 2 + Contour.points.Count + Contour.startVertex) % Contour.points.Count];
 
 
             direction = nextPoint - Point;
@@ -320,7 +340,7 @@ public class ContourEditor : Editor
 
             if (i == 0 || prevIsCircle)
             {
-                if (i == 0 && Contour.closed)
+                if (i == 0 && Contour.forceClosed)
                 {
                     Vector2 previousDirection = Point - previousPoint;
                     float angleprevDirection = (-1 * Vector2.SignedAngle(previousDirection, direction));
@@ -363,7 +383,7 @@ public class ContourEditor : Editor
             if ((Contour.offsetDirection == OffsetDir.Left && angle > 0 && creator.SmoothConvexe) || (Contour.offsetDirection == OffsetDir.Right && angle < 0 && creator.SmoothConvexe))
             {
                 path.Add(new Line(prevPoint, newB));
-                if (!Contour.closed && i == Contour.points.Count - 2)
+                if (!Contour.forceClosed && i == Contour.points.Count - 2)
                 {
 
                 }
@@ -394,7 +414,7 @@ public class ContourEditor : Editor
 
                 Vector2 p = nextPoint + bissectorNormal * d;
 
-                if (!Contour.closed && i == Contour.points.Count - 2)
+                if (!Contour.forceClosed && i == Contour.points.Count - 2)
                 {
                     p = newB;
                 }
@@ -428,23 +448,7 @@ public class ContourEditor : Editor
             }
         }
 
-        
-        for (int i = 0; i < path.Count; i++)
-        {
-            switch (path[i].GetTypeGeom())
-            {
-                case TypeGeom.Line:
-                    Line l = (Line)path[i];
 
-                break;
-                case TypeGeom.Circle:
-                    Circle c = (Circle)path[i]; 
-                break;
-
-                default: break;
-
-            }
-        }
     }
 
     public void removeLastPoint()
@@ -523,7 +527,7 @@ public class ContourEditor : Editor
                 }
                 else
                 {
-                    if (a1 < a2)
+                    if (a1 > a2)
                     {
                         Vector2 temp = p[0];
                         p.RemoveAt(0);

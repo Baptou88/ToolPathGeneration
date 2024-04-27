@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -19,7 +20,7 @@ public class Contour
     public int depth = 10;
 
     [SerializeField]
-    public bool closed = true;
+    public bool forceClosed = true;
 
     [Range(0.0f, 0.999999f)]
     public float t = .5f;
@@ -27,7 +28,7 @@ public class Contour
     [SerializeField]
     public OffsetDir offsetDirection = OffsetDir.Left;
 
-
+    public int startVertex = 0;
 
     [Range(0.0f , 2.0f)]
     public float diameter = 1;
@@ -121,6 +122,30 @@ public class Contour
     {
         points.RemoveAt(points.Count - 1);
         
+    }
+
+    public bool  isClosed()
+    {
+        return forceClosed || points[0] == points[points.Count-1];
+    }
+
+    public bool isCounterClockwize()
+    {
+        
+        float area = 0;
+
+        // Appliquer la formule du shoelace
+        for (int i = 0; i < points.Count; i++)
+        {
+            Vector2 currentVertex = points[i];
+            Vector2 nextVertex = points[(i + 1) % points.Count];
+            area += (nextVertex.x + currentVertex.x) * (nextVertex.y - currentVertex.y);
+        }
+
+        // Prendre la valeur absolue et diviser par 2
+        //area = Mathf.Abs(area) / 2f;
+
+        return area > 0;
     }
 
 }

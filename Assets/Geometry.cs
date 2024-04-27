@@ -23,6 +23,9 @@ public abstract class Geometry
     {
         return this.MemberwiseClone();
     }
+
+    abstract public Vector2 getNormal(OffsetDir dir);
+    
 }
 
 public class Line : Geometry
@@ -56,6 +59,16 @@ public class Line : Geometry
     public override Vector2 Lerp(float t)
     {
         return Vector2.Lerp(pta, ptb, t);
+    }
+
+    public override Vector2 getNormal(OffsetDir dir)
+    {
+        Vector2 d = ptb - pta;
+        if (dir == OffsetDir.Right)
+        {
+            return new Vector2(d.y,-d.x);
+        }
+        return new Vector2(-d.y,d.x);
     }
 }
 
@@ -148,6 +161,9 @@ public class Circle : Geometry
 
     }
 
-
+    public override Vector2 getNormal(OffsetDir dir)
+    {
+        throw new System.NotImplementedException();
+    }
 }
 
