@@ -20,23 +20,48 @@ public class ContourEditor : Editor
 
     public List<Geometry> pathCorrected = new List<Geometry>();
 
+    bool needsRepaint = false;
+
+    SelectionInfo selectionInfo;
     void OnSceneGUI()
     {
-        Input();
-        Draw();
-        if (Contour.basicPath)
+        Event guiEvent = Event.current;
+        
+        if (guiEvent.type == EventType.Repaint)
         {
-            Vector2 toolPos = GetPosAtT(path, Contour.t);
-            Handles.color = Color.yellow;
-            Handles.DrawWireDisc(toolPos, Vector3.forward, Contour.diameter);
-        }
+            Draw();
+            if (Contour.basicPath)
+            {
+                Vector2 toolPos = GetPosAtT(path, Contour.t);
+                Handles.color = Color.yellow;
+                Handles.DrawWireDisc(toolPos, Vector3.forward, Contour.diameter);
+            }
 
-        if (Contour.PathN)
+            if (Contour.PathN)
+            {
+                Vector2 toolPosN = GetPosAtT(pathCorrected, Contour.t);
+                Handles.color = Color.magenta;
+                Handles.DrawWireDisc(toolPosN, Vector3.forward, Contour.diameter);
+            }
+            
+        } else if (guiEvent.type == EventType.Layout)
         {
-            Vector2 toolPosN = GetPosAtT(pathCorrected, Contour.t);
-            Handles.color = Color.magenta;
-            Handles.DrawWireDisc(toolPosN, Vector3.forward, Contour.diameter);
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+        } else
+        {
+            
+            HandleInput(guiEvent);
+            if (needsRepaint)
+            {
+                needsRepaint = false;
+                HandleUtility.Repaint();
+            }
         }
+        
+
+
+       
+
     }
 
     public override void OnInspectorGUI()
@@ -50,37 +75,115 @@ public class ContourEditor : Editor
         }
     }
 
-    void Input()
+    void HandleInput(Event guiEvent)
     {
-        Event guiEvent = Event.current;
+        // Ray mouseRay = HandleUtility.GUIPointToWorldRay(guiEvent.mousePosition);
+		// float drawPlaneHeight = 0;
+		// float dstToDrawPlane = (drawPlaneHeight - mouseRay.origin.y) / mouseRay.direction.y;
+		// Vector3 mousePosition = mouseRay.GetPoint(dstToDrawPlane);
         Vector2 mousePos = HandleUtility.GUIPointToWorldRay(guiEvent.mousePosition).origin;
 
-        if (guiEvent.type == EventType.MouseDown && guiEvent.button == 0 && guiEvent.shift)
+        if (guiEvent.type == EventType.MouseDown && guiEvent.button == 0 && guiEvent.modifiers == EventModifiers.None)
         {
-            Undo.RecordObject(creator, "Add segment");
-            topContourPath.positionCount++;
-            topContourPath.SetPosition(topContourPath.positionCount - 1, mousePos);
-
-            Contour.AddSegment(mousePos);
+            HandleLeftMouseDown(mousePos);
         }
-
-
+        if (guiEvent.type == EventType.MouseUp && guiEvent.button == 0 && guiEvent.modifiers == EventModifiers.None)
+        {
+            HandleLeftMouseUp(mousePos);
+        }
+        if (guiEvent.type == EventType.MouseDrag && guiEvent.button == 0 && guiEvent.modifiers == EventModifiers.None)
+        {
+            HandleLeftMouseDrag(mousePos);
+        }
+        if (!selectionInfo.pointIsSelected)
+        {
+            updateMouseOverInfo(mousePos);
+        }
 
         topContourPath.loop = Contour.forceClosed;
 
 
     }
 
-    //public float lengthContourN()
-    //{
+    void HandleLeftMouseDown(Vector3 mousePosition){
+        if (!selectionInfo.mouseIsOverPoint)
+        {
+            int newPointIndex = selectionInfo.mouseIsOverLine ? selectionInfo.lineIndex + 1 : Contour.points.Count; 
+            Undo.RecordObject(creator, "Add segment");
+            topContourPath.positionCount++;
+            topContourPath.SetPosition(topContourPath.positionCount - 1, mousePosition);
 
-    //    float length = 0.0f;
-    //    for (int i = 0; i < path.Count; i++)
-    //    {
-    //        length += path[i].Length();
-    //    }
-    //    return length;
-    //}
+            // Contour.AddPoint(mousePosition);
+            Contour.points.Insert(newPointIndex,mousePosition);
+            selectionInfo.pointIndex = newPointIndex;
+             
+        }
+        selectionInfo.pointIsSelected = true;
+        selectionInfo.positionAtStartOfDrag = mousePosition;
+        needsRepaint = true;
+    }
+    void HandleLeftMouseUp(Vector3 mousePosition)
+    {
+        if (selectionInfo.pointIsSelected)
+        {
+            Contour.points[selectionInfo.pointIndex] = selectionInfo.positionAtStartOfDrag;
+            Undo.RecordObject(creator,"Move Point");
+            Contour.points[selectionInfo.pointIndex] = mousePosition;
+            selectionInfo.pointIsSelected = false;
+            selectionInfo.pointIndex = -1;
+            needsRepaint = true;
+        }
+    }
+    void HandleLeftMouseDrag(Vector3 mousePosition){
+        if (selectionInfo.pointIsSelected)
+        {
+
+            Contour.points[selectionInfo.pointIndex] = mousePosition;
+            needsRepaint = true;
+        }
+    }
+     void updateMouseOverInfo(Vector3 mousePosition){
+        int mouseOverPointIndex = -1;
+        for (int i = 0; i < Contour.points.Count; i++)
+        {
+            if (Vector3.Distance(mousePosition,Contour.points[i]) < creator.handleRadius )
+            {
+                mouseOverPointIndex = i;
+                break;
+            }
+        }
+        if (mouseOverPointIndex != selectionInfo.pointIndex)
+        {
+            
+            selectionInfo.pointIndex = mouseOverPointIndex;
+            selectionInfo.mouseIsOverPoint = mouseOverPointIndex != -1;
+            needsRepaint = true;
+        }
+        if (selectionInfo.mouseIsOverPoint)
+        {
+            selectionInfo.mouseIsOverLine = false;
+            selectionInfo.lineIndex = -1;
+        } else
+        {
+            int mouseIsOverLineIndex = -1;
+            float closestLineDst = creator.handleRadius;
+            for (int i = 0; i < Contour.points.Count; i++)
+            {
+              Vector3 nextPoint = Contour.points[(i+1)%Contour.points.Count];
+              float dstFromMouseToLine = HandleUtility.DistancePointLine(mousePosition,Contour.points[i],nextPoint);  
+              if (dstFromMouseToLine < closestLineDst)
+              {
+                mouseIsOverLineIndex = i;
+              }
+            }
+            if (selectionInfo.lineIndex != mouseIsOverLineIndex)
+            {
+                selectionInfo.lineIndex = mouseIsOverLineIndex;
+                selectionInfo.mouseIsOverLine = mouseIsOverLineIndex != -1 ;
+                needsRepaint = true;
+            }
+        }
+    }
 
     public float lengthContour(List<Geometry> pathe)
     {
@@ -101,7 +204,7 @@ public class ContourEditor : Editor
         float nextPos = 0;
         int index = 0;
         float tIndex = 0;
-        for (int i = 0; i < path.Count; i++)
+        for (int i = 0; i < pathG.Count; i++)
         {
             nextPos += pathG[i].Length() / total;
             if (t > nextPos)
@@ -112,22 +215,13 @@ public class ContourEditor : Editor
             else
             {
                 index = i;
-                //Debug.Log(i);
                 tIndex = (t - pos) * total / pathG[i].Length();
                 break;
             }
         }
         Vector3 toolPos;
-
         toolPos = pathG[index].Lerp(tIndex);
         return toolPos;
-        //Handles.color = Color.yellow;
-        //Handles.DrawWireDisc(toolPos, Vector3.forward, Contour.diameter);
-        //if (creator.cylindre != null)
-        //{
-        //    creator.cylindre.transform.position = toolPos;
-        //}
-        //Handles.color = Color.blue;
     }
 
     private void FindSelfCuttingIntersection()
@@ -136,6 +230,24 @@ public class ContourEditor : Editor
         intersection.Clear();
         int j2 = -1;
         Vector2 ptintersection = Vector2.zero;
+
+        Approche app = Contour.typeApproche switch
+        {
+            TypeApproche.Perpendicular => new PerpendicularApproch(),
+            TypeApproche.Circle => new CircularApproch(),
+            _ => null,
+        };
+        if (app != null)
+        {
+            //pathCorrected.AddRange(app.calculateApproche(path[0],Contour.offsetDirection));
+            List<Geometry> approcheEl = app.calculateApproche(path[0],Contour.offsetDirection);
+            foreach (Geometry item in approcheEl)
+            {
+                pathCorrected.Add(item);
+            }
+        }
+        //
+
         for (int i = 0; i < path.Count; i++)
         {
             if (i < j2)
@@ -151,13 +263,16 @@ public class ContourEditor : Editor
                     
                     if (intersection.Count>1)
                     {
-                         intersection = findNearestIntersectionPt(path[i], intersection);
+                        intersection = findNearestIntersectionPt(path[i], intersection);
                     }
-                    Handles.color = Color.blue;
-                    for (int k = 0; k < intersection.Count; k++)
+                    if (Contour.selfCuttingIntersecr)
                     {
-                        Handles.DrawWireDisc(intersection[k], Vector3.forward, 0.1f);
-                        Handles.Label(intersection[k], k.ToString());
+                        Handles.color = Color.blue;
+                        for (int k = 0; k < intersection.Count; k++)
+                        {
+                            Handles.DrawWireDisc(intersection[k], Vector3.forward, 0.1f);
+                            Handles.Label(intersection[k], k.ToString());
+                        }
                     }
                     ptintersection = intersection[0];
                         
@@ -167,62 +282,36 @@ public class ContourEditor : Editor
                 }
 
             }
-            switch (path[i].GetTypeGeom())
+            Geometry g2 = (Geometry)path[i].Clone();
+            if(intersection.Count > 0 && i < j2)
             {
-                case TypeGeom.Line:
-                    Line l = (Line)path[i].Clone();
-                    if (intersection.Count > 0 && i < j2)
-                    {
-                        l.ptb = ptintersection;
-                    }
-                    if (i == j2)
-                    {
-                        l.pta = ptintersection;
-                        j2 = -1;
-                    }
-                    pathCorrected.Add(l);
-
-                    break;
-                case TypeGeom.Circle:
-                    Circle c = (Circle)path[i].Clone();
-                    
-                    if(intersection.Count > 0 && i !=j2)
-                    {
-                        // modifier le point de fin du cercle
-                        c.modifyEndPoint(ptintersection);
-                    }
-                    if(i == j2)
-                    {
-                        // modifier le point de debut du cercle
-                        c.modifyBeginPoint(ptintersection);
-                    }
-                    pathCorrected.Add(c);
-                    break;
-                default:
-                    pathCorrected.Add(path[i]);
-                    break;
+                // modifier le point de fin du cercle
+                g2.modifyEndPoint(ptintersection);
             }
+            if(i == j2)
+            {
+                // modifier le point de debut du cercle
+                g2.modifyBeginPoint(ptintersection);
+            }
+            pathCorrected.Add(g2);
+        
+
 
         }
 
-        Vector2 normal = pathCorrected[0].getNormal(Contour.offsetDirection).normalized;
-        switch (pathCorrected[0].GetTypeGeom())
-        {
-            case TypeGeom.Line:
-                Line l = (Line)pathCorrected[0];
-                Handles.color = Color.cyan;
-                Handles.DrawLine(l.pta, l.pta + normal * 1);
-            break;
-            default:
 
-            break;
-        }
 
         if (Contour.PathN)
         {
             for (int i = 0; i < pathCorrected.Count; i++)
             {
-                Handles.color = Color.magenta;
+                 if (i == 0 && Contour.typeApproche != TypeApproche.None)
+                {
+                    Handles.color = Color.cyan;
+                } else
+                {
+                    Handles.color = Color.magenta;
+                }
                 pathCorrected[i].Draw();
             }
         }
@@ -231,48 +320,13 @@ public class ContourEditor : Editor
     {
         for (int i = 0; i < Contour.points.Count; i++)
         {
+            //affiche les lignes verticales
             Vector3 p = Contour.points[i];
             Vector3 p2 = p;
             p2.z = Contour.depth;
             Handles.color = Color.black;
             Handles.DrawLine(p, p2);
-        }
-        int numLines = Contour.forceClosed ? Contour.points.Count : Contour.points.Count - 1;
-        for (int i = 0; i < numLines; i++)
-        {
 
-            topContourPath.SetPosition(i, Contour.points[i]);
-
-            Handles.color = Color.black;
-            if (i >= Contour.points.Count - 1)
-            {
-                Handles.DrawLine(Contour.points[i], Contour.points[0]);
-
-                Vector3 vec3a = Contour.points[i];
-                vec3a.z = Contour.depth;
-                Vector3 vec3b = Contour.points[0];
-                vec3b.z = Contour.depth;
-                Handles.DrawLine(vec3a, vec3b);
-            }
-            else
-            {
-                Handles.DrawLine(Contour.points[i], Contour.points[i + 1]);
-
-
-                Vector3 vec3a = Contour.points[i];
-                vec3a.z = Contour.depth;
-                Vector3 vec3b = Contour.points[i + 1];
-                vec3b.z = Contour.depth;
-
-                Handles.DrawLine(vec3a, vec3b);
-            }
-
-
-        }
-
-        // affiche les points du contour et gere leurs deplacements
-        for (int i = 0; i < Contour.NumPoints; i++)
-        {
             if (i == 0)
             {
                 Handles.color = Color.green;
@@ -280,21 +334,43 @@ public class ContourEditor : Editor
             else
             {
                 Handles.color = Color.red;
-
+            }
+            if (i == selectionInfo.pointIndex)
+            {
+                Handles.color =  selectionInfo.pointIsSelected ?Color.white : Color.blue;
             }
             Vector2 newPos = Handles.FreeMoveHandle(Contour[i], .1f, Vector2.zero, Handles.CylinderHandleCap);
-            
-            if (Contour[i] != newPos)
-            {
-                Undo.RecordObject(creator, "Move point");
-                Contour.MovePoint(i, newPos);
-                topContourPath.SetPosition(i, newPos);
-            }
+            Handles.DrawSolidDisc(Contour.points[i],Vector3.forward,creator.handleRadius);
+        
         }
 
+        int numLines = Contour.forceClosed ? Contour.points.Count : Contour.points.Count - 1;
+        for (int i = 0; i < numLines; i++)
+        {
+
+            topContourPath.SetPosition(i, Contour.points[i]);
+
+            if (i == selectionInfo.lineIndex)
+            {
+                Handles.color = Color.red;
+            } else {
+                Handles.color = Color.black;
+            }
+            Handles.DrawLine(Contour.points[i], Contour.points[(i + 1 ) % Contour.points.Count]);
 
 
-        Vector2 direction = (Contour.points[1] - Contour.points[0]);
+            Vector3 vec3a = Contour.points[i];
+            vec3a.z = Contour.depth;
+            Vector3 vec3b = Contour.points[(i + 1) % Contour.points.Count];
+            vec3b.z = Contour.depth;
+
+            Handles.DrawLine(vec3a, vec3b);
+            
+
+
+        }
+
+        Vector2 direction = Contour.points[1] - Contour.points[0];
         Vector2 normal = new Vector2(-direction.y, direction.x).normalized;
 
         //with tool offset
@@ -343,7 +419,7 @@ public class ContourEditor : Editor
                 if (i == 0 && Contour.forceClosed)
                 {
                     Vector2 previousDirection = Point - previousPoint;
-                    float angleprevDirection = (-1 * Vector2.SignedAngle(previousDirection, direction));
+                    float angleprevDirection = -1 * Vector2.SignedAngle(previousDirection, direction);
                     if ((Contour.offsetDirection == OffsetDir.Left && angleprevDirection < 0) || (Contour.offsetDirection == OffsetDir.Right && angleprevDirection > 0) || !creator.SmoothConvexe )
                     {
 
@@ -433,10 +509,27 @@ public class ContourEditor : Editor
 
         }
 
-        if (Contour.selfCuttingIntersecr)
+        // approche decalé
+        if (Contour.isClosed())
         {
-            FindSelfCuttingIntersection();
+            switch (path[0].GetTypeGeom())
+            {
+                case TypeGeom.Line:
+                    Line l = (Line)path[0];
+                    Line l1 = new( l.Lerp(0.5f), l.ptb);
+                    Line l2 = new(l.pta,l.Lerp(0.5f));
+                    path[0] = l1;
+                    path.Add(l2);
+                break;
+                default:
+                    throw new NotImplementedException();
+                break;
+            }
         }
+       
+
+        FindSelfCuttingIntersection();
+        
 
 
         if (Contour.basicPath)
@@ -444,10 +537,11 @@ public class ContourEditor : Editor
             Handles.color = Color.yellow;
             for (int i = 0; i < path.Count; i++)
             {
+               
                 path[i].Draw();
             }
         }
-
+        needsRepaint = false;
 
     }
 
@@ -455,8 +549,10 @@ public class ContourEditor : Editor
     {
         Contour.removeLastPoint();
     }
+   
     void OnEnable()
     {
+        selectionInfo = new();
         creator = (ContourCreator)target;
         if (creator.contour == null)
         {
@@ -543,206 +639,17 @@ public class ContourEditor : Editor
         throw new NotImplementedException();
     }
 
-}
-
-
-
-
-
-
-public class Intersector
-{
-    public List<Vector2> Intersect(Geometry m1, Geometry m2)
+    public class SelectionInfo
     {
-        if (m1 is Line)
-        {
-            if (m2 is Line)
-            {
-                return Intersect((Line)m1, (Line)m2);
-            }
-            else
-            {
-                return Intersect((Line)m1, (Circle)m2);
-            }
+        public int pointIndex = -1;
+        public bool mouseIsOverPoint;
+        public bool pointIsSelected;
+        public Vector3 positionAtStartOfDrag;
 
 
-        }
-        else
-        {
-            if (m2 is Line)
-            {
-                return Intersect((Circle)m1, (Line)m2);
-            }
-            else
-            {
-                return Intersect((Circle)m1, (Circle)m2);
-            }
-        }
+        public int lineIndex = -1;
+        public bool mouseIsOverLine;
 
-    }
-    public List<Vector2> Intersect(Line l1, Line l2)
-    {
-        List<Vector2> list = new List<Vector2>();
-        Vector2 dir1 = l1.dir();
-        Vector2 dir2 = l2.dir();
-        //float denominator = dir1.x * dir2.y - dir1.y * dir2.x;
-        //Debug.Log("denom: " + denominator.ToString());
-        //if (denominator != 0)
-        //{
-        //    //Vector2 diff = l2.pta - l1.pta;
-        //    //float t = (diff.x * dir2.y - diff.y * dir2.x) / denominator;
-
-
-        //    Debug.Log("t " + t.ToString());
-
-        //    if (t >= 0 && t <= 1)
-        //    {
-        //        Vector2 intersectionPoint = l1.pta + t * dir1;
-        //        list.Add(intersectionPoint);
-        //    }
-        //    else
-        //    {
-
-        //    }
-        //}
-
-        //float t = Vector3.Cross(l2.pta - l1.pta, dir2).magnitude / Vector3.Cross(dir1, dir2).magnitude;
-        //float u = Vector3.Cross(l1.pta - l2.pta, dir1).magnitude / Vector3.Cross(dir2, dir1).magnitude;
-        //if (t > 0 && t < 1 && u > 0 && u < 1)
-        //{
-
-        //    Vector3 intersection = l1.pta + t * dir1;
-        //    list.Add(intersection);
-        //}
-        float det = dir1.x * dir2.y - dir1.y * dir2.x;
-
-        if (det != 0)
-        {
-            float t = ((l2.pta.x - l1.pta.x) * dir2.y - (l2.pta.y - l1.pta.y) * dir2.x) / det;
-            float u = ((l2.pta.x - l1.pta.x) * dir1.y - (l2.pta.y - l1.pta.y) * dir1.x) / det;
-
-            if (t > 0 && t < 1 && u > 0 && u < 1)
-            {
-                list.Add(l1.pta + t * dir1);
-            }
-        }
-        return list;
-    }
-    public List<Vector2> Intersect(Line line, Circle circle)
-    {
-
-        List<Vector2> list = new List<Vector2>();
-
-        Vector2 segmentDir = line.dir();
-        Vector2 circleToSegmentStart = line.pta - circle.center;
-
-        float a = Vector2.Dot(segmentDir, segmentDir);
-        float b = 2f * Vector2.Dot(circleToSegmentStart, segmentDir);
-        float c = Vector2.Dot(circleToSegmentStart, circleToSegmentStart) - circle.radius * circle.radius;
-
-        float discriminant = b * b - 4 * a * c;
-
-        if (discriminant >= 0)
-        {
-            float t1 = (-b + Mathf.Sqrt(discriminant)) / (2 * a);
-            float t2 = (-b - Mathf.Sqrt(discriminant)) / (2 * a);
-
-            if (t1 >= 0 && t1 <= 1)
-            {
-                Vector2 intersectionPoint1 = line.pta + t1 * segmentDir;
-                if (PointisInArcCircle(circle,intersectionPoint1))
-                {
-                    list.Add(intersectionPoint1);
-                }
-                
-            }
-
-            if (t2 >= 0 && t2 <= 1)
-            {
-                Vector2 intersectionPoint2 = line.pta + t2 * segmentDir;
-                if (PointisInArcCircle(circle,intersectionPoint2))
-                {
-                    list.Add(intersectionPoint2);
-                }
-            }
-        }
-        else
-        {
-
-        }
-        return list;
-    }
-
-    public List<Vector2> Intersect(Circle circle, Line line)
-    {
-        return Intersect(line, circle);
-    }
-
-    public List<Vector2> Intersect(Circle circle1, Circle circle2)
-    {
-        List<Vector2> list = new List<Vector2>();
-        
-        float d = Vector2.Distance(circle1.center, circle2.center);
-
-        if (d < circle1.radius + circle2.radius)
-        {
-            // 2 points
-            double a = (circle1.radius * circle1.radius - circle2.radius * circle2.radius + d * d) / (2 * d);
-            double h = Math.Sqrt(circle1.radius * circle1.radius - a * a);
-
-            // Find P2.
-            double cx2 = circle1.center.x + a * (circle2.center.x - circle1.center.x) / d;
-            double cy2 = circle1.center.y + a * (circle2.center.y - circle1.center.y) / d;
-
-            // Get the points P3.
-            Vector2 intersection1 = new Vector2((float)(cx2 + h * (circle2.center.y - circle1.center.y) / d), (float)(cy2 - h * (circle2.center.x - circle1.center.x) / d));
-            Vector2 intersection2 = new Vector2((float)(cx2 - h * (circle2.center.y - circle1.center.y) / d), (float)(cy2 + h * (circle2.center.x - circle1.center.x) / d));
-
-            if (PointisInArcCircle(circle1,intersection1))
-            {
-                list.Add(intersection1);
-            }
-            if (PointisInArcCircle(circle1, intersection2))
-            {
-                list.Add(intersection2);
-            }
-
-
-        }
-        if (Mathf.Abs(d - (circle1.radius + circle2.radius)) < 0.001)
-        {
-            // 1 point
-
-            list.Add(Vector2.Lerp(circle1.center, circle2.center, circle1.radius / (circle1.radius + circle2.radius)));
-        }
-        return list;
-    }
-
-    public bool PointisInArcCircle(Circle c, Vector2 p)
-    {
-        
-        float angleDebut = Vector2.SignedAngle(c.normal,  p-c.center);
-        float angleFin = Vector2.SignedAngle(c.endDirection(), p-c.center);
-
-        //Handles.DrawLine(c.center, c.center + c.endDirection());
-        //Debug.Log(angleFin + " " + angleDebut);
-        //return true;
-        if (c.angle > 0)
-        {
-            if (angleDebut < c.angle && angleFin < c.angle)
-            {
-                return true;
-            }
-            return false;
-        }
-        else
-        {
-            if (angleDebut > c.angle && angleFin > c.angle)
-            {
-                return true;
-            }
-            return false;
-        }
     }
 }
 

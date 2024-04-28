@@ -7,12 +7,14 @@ public class ContourCreator : MonoBehaviour
     public LineRenderer topContourPath;
     public LineRenderer toolPath;
     public GameObject cylindre;
-    public Contour contour;
     public TextMeshProUGUI text;
+    public Contour contour;
     public bool SmoothConvexe;
 
     private GameObject selectedSphere;
     private bool isDragging;
+
+    public float handleRadius = 0.5f;
     public void CreateContour()
     {
         contour = new Contour(transform.position);

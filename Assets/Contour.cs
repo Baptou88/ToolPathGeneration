@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 
@@ -40,6 +41,18 @@ public class Contour
     
     [SerializeField]
     public bool PathN = false;
+
+    [SerializeField]
+    public TypeApproche typeApproche;
+    [SerializeField]
+    public PerpendicularApproch approche = new();
+    // public Approche approche = typeApproche switch
+    // {
+    //     TypeApproche.Perpendicular => new PerpendicularApproch(),
+    //     TypeApproche.Circle => new CircularApproch(),
+    //     _ => null,
+    // };
+
     public Contour(Vector2 centre)
     {
         points = new List<Vector2>
@@ -75,7 +88,7 @@ public class Contour
         }
     }
 
-    public void AddSegment(Vector2 anchorPos)
+    public void AddPoint(Vector2 anchorPos)
     {
         //points.Add(points[points.Count - 1] * 2 - points[points.Count - 2]);
         //points.Add((points[points.Count - 1] + anchorPos) * .5f);

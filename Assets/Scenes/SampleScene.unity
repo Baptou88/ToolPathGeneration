@@ -530,27 +530,32 @@ MonoBehaviour:
   topContourPath: {fileID: 1971797694}
   toolPath: {fileID: 1691207049}
   cylindre: {fileID: 2058977321}
+  text: {fileID: 1145084659}
   contour:
     points:
     - {x: 0, y: 0}
     - {x: 0, y: 2}
-    - {x: 3, y: 2}
-    - {x: 3.764354, y: 3.6217437}
-    - {x: -0.5398607, y: 5.211137}
-    - {x: -0.43089426, y: 2.793913}
-    - {x: -5.0757313, y: 2.368196}
-    - {x: -5.3033457, y: 0.83486354}
+    - {x: 3.875149, y: 1.8684413}
+    - {x: 1.8596692, y: 5.1725073}
+    - {x: 0.21040785, y: 4.94037}
+    - {x: -1.6591606, y: 3.2231083}
+    - {x: -5.14495, y: 2.5788155}
+    - {x: -5.7727222, y: 0.31553042}
+    - {x: -5.1614695, y: -0.31224203}
     depth: -5
     forceClosed: 0
     t: 0
-    offsetDirection: 0
+    offsetDirection: 1
     startVertex: 0
-    diameter: 0.48
+    diameter: 0.37
     selfCuttingIntersecr: 1
-    basicPath: 1
+    basicPath: 0
     PathN: 1
-  text: {fileID: 1145084659}
+    typeApproche: 2
+    approche:
+      distance: 0.2
   SmoothConvexe: 1
+  handleRadius: 0.2
 --- !u!4 &800301078
 Transform:
   m_ObjectHideFlags: 0
@@ -1571,12 +1576,14 @@ LineRenderer:
   m_Positions:
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 2, z: 0}
-  - {x: 3, y: 2, z: 0}
-  - {x: 3.764354, y: 3.6217437, z: 0}
-  - {x: -0.5398607, y: 5.211137, z: 0}
-  - {x: -0.43089426, y: 2.793913, z: 0}
-  - {x: -5.0757313, y: 2.368196, z: 0}
-  - {x: -5.3033457, y: 0.83486354, z: 0}
+  - {x: 3.875149, y: 1.8684413, z: 0}
+  - {x: 1.8596692, y: 5.1725073, z: 0}
+  - {x: 0.21040785, y: 4.94037, z: 0}
+  - {x: -1.6591606, y: 3.2231083, z: 0}
+  - {x: -5.14495, y: 2.5788155, z: 0}
+  - {x: -5.7727222, y: 0.31553042, z: 0}
+  - {x: -5.7727222, y: 0.31553042, z: 0}
+  - {x: -5.310153, y: 1.5380347, z: 0}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 0.11119727

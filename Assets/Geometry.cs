@@ -25,6 +25,13 @@ public abstract class Geometry
     }
 
     abstract public Vector2 getNormal(OffsetDir dir);
+
+    abstract public Vector2 getDirection();
+
+    abstract public void modifyEndPoint(Vector2 ptintersection);
+
+    abstract public void modifyBeginPoint(Vector2 ptintersection);
+
     
 }
 
@@ -69,6 +76,21 @@ public class Line : Geometry
             return new Vector2(d.y,-d.x);
         }
         return new Vector2(-d.y,d.x);
+    }
+
+    public override void modifyEndPoint(Vector2 ptintersection)
+    {
+        this.ptb = ptintersection;
+    }
+
+    public override void modifyBeginPoint(Vector2 ptintersection)
+    {
+        this.pta = ptintersection;
+    }
+
+    public override Vector2 getDirection()
+    {
+        return ptb - pta;
     }
 }
 
@@ -127,7 +149,7 @@ public class Circle : Geometry
         return Mathf.PI * radius * Mathf.Abs(angle) / 180;
     }
 
-    public void modifyEndPoint(Vector2 ptintersection)
+    public override void modifyEndPoint(Vector2 ptintersection)
     {
         float angle = Vector2.Angle(normal, ptintersection - this.center);
         if (this.angle > 0)
@@ -139,7 +161,7 @@ public class Circle : Geometry
         //throw new NotImplementedException();
     }
 
-    public void modifyBeginPoint(Vector2 ptintersection)
+    public override void modifyBeginPoint(Vector2 ptintersection)
     {
 
         //calcul angle entre normal et ptintersection
@@ -157,11 +179,16 @@ public class Circle : Geometry
             this.angle -= angleModif; /// a voir 
         }
         this.normal = ptintersection - this.center;
-        Handles.DrawDottedLine(this.center, this.center + this.normal, 0.1f);
+        //Handles.DrawDottedLine(this.center, this.center + this.normal, 0.1f);
 
     }
 
     public override Vector2 getNormal(OffsetDir dir)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public override Vector2 getDirection()
     {
         throw new System.NotImplementedException();
     }
