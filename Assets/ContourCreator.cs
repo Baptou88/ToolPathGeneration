@@ -8,8 +8,8 @@ public class ContourCreator : MonoBehaviour
     public LineRenderer toolPath;
     public GameObject cylindre;
     public TextMeshProUGUI text;
-    public Contour contour;
-    public bool SmoothConvexe;
+    public Contour contour = new(Vector2.zero);
+   
 
     private GameObject selectedSphere;
     private bool isDragging;
