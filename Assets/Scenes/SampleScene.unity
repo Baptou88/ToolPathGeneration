@@ -665,7 +665,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -552.3966, y: 27.116821}
+  m_AnchoredPosition: {x: -565.8, y: 45.1}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!212 &764424932
@@ -749,35 +749,54 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7946ab4814d9deb418201f944cd60e3c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  meshRenderer: {fileID: 1139169531}
   topContourPath: {fileID: 1971797694}
   toolPath: {fileID: 1691207049}
   cylindre: {fileID: 2058977321}
-  text: {fileID: 1145084659}
+  text: {fileID: 0}
   contour:
-    points:
-    - {x: 0, y: 0}
+  - points:
+    - {x: -9.079239, y: -2.3530812}
+    - {x: -4.71036, y: 5.227358}
+    - {x: -1.4120011, y: 5.169492}
+    - {x: -0.31254828, y: 8.004923}
+    - {x: 6.7760296, y: 7.7155933}
+    - {x: 7.528287, y: 4.735497}
+    - {x: 6, y: 2}
     - {x: 0, y: 2}
-    - {x: 3.875149, y: 1.8684413}
-    - {x: 1.8596692, y: 5.1725073}
-    - {x: 0.21040785, y: 4.94037}
-    - {x: -1.6591606, y: 3.2231083}
-    - {x: -5.14495, y: 2.5788155}
-    - {x: -5.7727222, y: 0.31553042}
-    - {x: -4.6529536, y: -0.7364924}
-    depth: -5
+    - {x: 0, y: 0}
+    depth: 10
     forceClosed: 0
-    t: 0
+    t: 0.44
     offsetDirection: 1
     startVertex: 0
-    diameter: 0.37
-    selfCuttingIntersecr: 1
+    diameter: 1
+    selfCuttingIntersecr: 0
     basicPath: 0
     PathN: 1
+    smoothConvexe: 1
     typeApproche: 2
     approche:
       distance: 0.2
-  SmoothConvexe: 0
-  handleRadius: 0.2
+  - points:
+    - {x: -8.764895, y: 5.3567953}
+    - {x: -9.513233, y: 8.901846}
+    - {x: -14.142509, y: 8.004923}
+    - {x: -17.932728, y: 4.6776314}
+    depth: 10
+    forceClosed: 1
+    t: 0.5
+    offsetDirection: 0
+    startVertex: 0
+    diameter: 1
+    selfCuttingIntersecr: 0
+    basicPath: 0
+    PathN: 1
+    smoothConvexe: 1
+    typeApproche: 2
+    approche:
+      distance: 0.2
+  handleRadius: 0.5
 --- !u!4 &800301078
 Transform:
   m_ObjectHideFlags: 0
@@ -1161,6 +1180,89 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1115506598}
   m_CullTransparentMesh: 1
+--- !u!1 &1139169530
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1139169533}
+  - component: {fileID: 1139169532}
+  - component: {fileID: 1139169531}
+  m_Layer: 0
+  m_Name: ContourMesh
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!23 &1139169531
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1139169530}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 78a34e75b40eced4da19282b751ed543, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1139169532
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1139169530}
+  m_Mesh: {fileID: 0}
+--- !u!4 &1139169533
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1139169530}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1145084657
 GameObject:
   m_ObjectHideFlags: 0
@@ -1398,8 +1500,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -13.903381, y: -271.11682}
-  m_SizeDelta: {x: -27.8069, y: -542.2336}
+  m_AnchoredPosition: {x: -2.909912, y: -287.60718}
+  m_SizeDelta: {x: -5.819812, y: -575.2144}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1657585629
 MonoBehaviour:
@@ -2008,15 +2110,14 @@ LineRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Positions:
-  - {x: 0, y: 0, z: 0}
-  - {x: 0, y: 2, z: 0}
-  - {x: 3.875149, y: 1.8684413, z: 0}
-  - {x: 1.8596692, y: 5.1725073, z: 0}
+  - {x: -1, y: 0, z: 0}
+  - {x: -0.5, y: 0.5, z: 0}
+  - {x: 0.5, y: -0.5, z: 0}
+  - {x: 1, y: 0, z: 0}
   - {x: 0.21040785, y: 4.94037, z: 0}
-  - {x: -1.6591606, y: 3.2231083, z: 0}
-  - {x: -5.14495, y: 2.5788155, z: 0}
-  - {x: -5.7727222, y: 0.31553042, z: 0}
-  - {x: -4.6529536, y: -0.7364924, z: 0}
+  - {x: -0.44714713, y: 2.545289, z: 0}
+  - {x: -5.684034, y: 3.0231073, z: 0}
+  - {x: -5.836936, y: 0.50022745, z: 0}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 0.11119727
@@ -2344,3 +2445,4 @@ SceneRoots:
   - {fileID: 1548282091}
   - {fileID: 2058977325}
   - {fileID: 919805028}
+  - {fileID: 1139169533}

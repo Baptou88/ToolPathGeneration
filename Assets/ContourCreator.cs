@@ -1,14 +1,17 @@
+using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
 public class ContourCreator : MonoBehaviour
 {
 
+    public MeshFilter meshFilter;
     public LineRenderer topContourPath;
     public LineRenderer toolPath;
     public GameObject cylindre;
     public TextMeshProUGUI text;
-    public Contour contour = new(Vector2.zero);
+    public List<Contour> contour = new();
    
 
     private GameObject selectedSphere;
@@ -17,26 +20,30 @@ public class ContourCreator : MonoBehaviour
     public float handleRadius = 0.5f;
     public void CreateContour()
     {
-        contour = new Contour(transform.position);
+        contour.Add(new Contour(transform.position));
     }
 
     public void Start()
     {
-        foreach (Vector2 p in contour.points)
+        for (int contourIndex = 0; contourIndex < contour.Count; contourIndex++)
         {
-            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            Vector3 positionSphere = p;
-            sphere.tag = "Sphere";
-            sphere.transform.position =  positionSphere;
-            sphere.transform.parent = transform ;
+            foreach (Vector2 p in contour[contourIndex].points)
+            {
+                GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                Vector3 positionSphere = p;
+                sphere.tag = "Sphere";
+                sphere.transform.position =  positionSphere;
+                sphere.transform.parent = transform ;
+            }
         }
+        
         
     }
     public void Update()
     {
         if (text != null)
         {
-            text.text = contour.points.Count.ToString();
+            text.text = contour.Count.ToString();
         }
 
 
@@ -64,37 +71,32 @@ public class ContourCreator : MonoBehaviour
             isDragging = false;
         }
 
-        if (isDragging && selectedSphere != null)
-        {
-            Vector3 newPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            newPos.z = selectedSphere.transform.position.z;
-            Vector2 posSphere = selectedSphere.transform.position;
-            for (int i = 0; i < contour.points.Count; i++)
-            {
-                if (posSphere == contour.points[i])
-                {
-                    contour.MovePoint(i,newPos);
-                    topContourPath.SetPosition(i,newPos);
+        // if (isDragging && selectedSphere != null)
+        // {
+        //     Vector3 newPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        //     newPos.z = selectedSphere.transform.position.z;
+        //     Vector2 posSphere = selectedSphere.transform.position;
+        //     for (int i = 0; i < contour.points.Count; i++)
+        //     {
+        //         if (posSphere == contour.points[i])
+        //         {
+        //             contour.MovePoint(i,newPos);
+        //             topContourPath.SetPosition(i,newPos);
                     
-                }
-            }
-            selectedSphere.transform.position = newPos;
-        }
+        //         }
+        //     }
+        //     selectedSphere.transform.position = newPos;
+        // }
 
     }
 
-    public void onDeleteButton()
+public void UpdateMeshRenderer()
+{
+    for (int i = 0; i < contour.Count; i++)
     {
-        contour.removeLastPoint();
-        //Vector3[] allPoints ;
-
-        //int a = cuttingPath.GetPositions(positions: allPoints);
-        //allPoints.ToArray().;
-
+        
     }
+}
 
-    public void reversePath()
-    {
-        contour.points.Reverse();
-    }
+
 }

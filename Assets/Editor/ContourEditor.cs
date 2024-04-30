@@ -9,56 +9,42 @@ public class ContourEditor : Editor
 {
 
     ContourCreator creator;
-    Contour Contour;
+
     public LineRenderer topContourPath;
     public LineRenderer toolPath;
 
     public Intersector intersect = new Intersector();
-    
 
 
 
-    bool needsRepaint = false;
+
+    bool contourChangedSinceLastRepaint = false;
 
     SelectionInfo selectionInfo;
     void OnSceneGUI()
     {
         Event guiEvent = Event.current;
-        
+
         if (guiEvent.type == EventType.Repaint)
         {
             Draw();
-            if (Contour.basicPath)
-            {
-                Vector2 toolPos = GetPosAtT(Contour.path, Contour.t);
-                Handles.color = Color.yellow;
-                Handles.DrawWireDisc(toolPos, Vector3.forward, Contour.diameter);
-            }
 
-            if (Contour.PathN)
-            {
-                Vector2 toolPosN = GetPosAtT(Contour.pathCorrected, Contour.t);
-                Handles.color = Color.magenta;
-                Handles.DrawWireDisc(toolPosN, Vector3.forward, Contour.diameter);
-            }
-            
-        } else if (guiEvent.type == EventType.Layout)
+
+        }
+        else if (guiEvent.type == EventType.Layout)
         {
             HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
-        } else
+        }
+        else
         {
-            
+
             HandleInput(guiEvent);
-            if (needsRepaint)
+            if (contourChangedSinceLastRepaint)
             {
-                needsRepaint = false;
+                contourChangedSinceLastRepaint = false;
                 HandleUtility.Repaint();
             }
         }
-        
-
-
-       
 
     }
 
@@ -69,23 +55,30 @@ public class ContourEditor : Editor
 
         if (GUILayout.Button("Reverse Path"))
         {
-            creator.reversePath();
+            SelectedContour.points.Reverse();
+            contourChangedSinceLastRepaint = true;
         }
     }
 
+
     void HandleInput(Event guiEvent)
     {
+
         // Ray mouseRay = HandleUtility.GUIPointToWorldRay(guiEvent.mousePosition);
-		// float drawPlaneHeight = 0;
-		// float dstToDrawPlane = (drawPlaneHeight - mouseRay.origin.y) / mouseRay.direction.y;
-		// Vector3 mousePosition = mouseRay.GetPoint(dstToDrawPlane);
+        // float drawPlaneHeight = 0;
+        // float dstToDrawPlane = (drawPlaneHeight - mouseRay.origin.y) / mouseRay.direction.y;
+        // Vector3 mousePosition = mouseRay.GetPoint(dstToDrawPlane);
         Vector2 mousePos = HandleUtility.GUIPointToWorldRay(guiEvent.mousePosition).origin;
 
+        if (guiEvent.type == EventType.MouseDown && guiEvent.button == 0 && guiEvent.modifiers == EventModifiers.Shift)
+        {
+            HandleLeftShiftMouseDown(mousePos);
+        }
         if (guiEvent.type == EventType.MouseDown && guiEvent.button == 0 && guiEvent.modifiers == EventModifiers.None)
         {
             HandleLeftMouseDown(mousePos);
         }
-        if (guiEvent.type == EventType.MouseUp && guiEvent.button == 0 && guiEvent.modifiers == EventModifiers.None)
+        if (guiEvent.type == EventType.MouseUp && guiEvent.button == 0 )
         {
             HandleLeftMouseUp(mousePos);
         }
@@ -98,91 +91,171 @@ public class ContourEditor : Editor
             updateMouseOverInfo(mousePos);
         }
 
-        topContourPath.loop = Contour.forceClosed;
+        //topContourPath.loop = Contour.forceClosed;
 
 
     }
 
-    void HandleLeftMouseDown(Vector3 mousePosition){
-        if (!selectionInfo.mouseIsOverPoint)
+    void HandleLeftShiftMouseDown(Vector3 pos)
+    {
+        if (selectionInfo.mouseIsOverPoint)
         {
-            int newPointIndex = selectionInfo.mouseIsOverLine ? selectionInfo.lineIndex + 1 : Contour.points.Count; 
-            Undo.RecordObject(creator, "Add segment");
-            topContourPath.positionCount++;
-            topContourPath.SetPosition(topContourPath.positionCount - 1, mousePosition);
+            SelectContourUnderMouse();
+            DeletePointUnderMouse();
+        } else {
+            CreateNewContour();
+            createNewPoint(pos);
+        }
+    }
+    void CreateNewContour()
+    {
+        Undo.RecordObject(creator, "Create Contour");
+        creator.contour.Add(new Contour(Vector2.zero));
+        selectionInfo.selectedContourIndex = creator.contour.Count-1;
+        
+    }
+    void createNewPoint(Vector3 mousePosition)
+    {
+        bool mouseIsOverSelectedContour = selectionInfo.mouseOverContourIndex == selectionInfo.selectedContourIndex;
+        int newPointIndex = (selectionInfo.mouseIsOverLine && mouseIsOverSelectedContour) ? selectionInfo.lineIndex + 1 : SelectedContour.points.Count;
+        Undo.RecordObject(creator, "Add point at index " + newPointIndex);
+        SelectedContour.points.Insert(newPointIndex, mousePosition);
+        selectionInfo.pointIndex = newPointIndex;
+        selectionInfo.mouseOverContourIndex = selectionInfo.selectedContourIndex;
+        contourChangedSinceLastRepaint = true;
+        SelectPointUnderMouse();
+    }
+    void SelectPointUnderMouse()
+    {
+        selectionInfo.pointIsSelected = true;
+        selectionInfo.mouseIsOverPoint = true;
+        selectionInfo.mouseIsOverLine = false;
+        selectionInfo.lineIndex = -1;
+        selectionInfo.positionAtStartOfDrag = SelectedContour.points[selectionInfo.pointIndex];
+        contourChangedSinceLastRepaint = true;
+    }
+    void SelectContourUnderMouse()
+    {
+        if (selectionInfo.mouseOverContourIndex != -1)
+        {
+            selectionInfo.selectedContourIndex = selectionInfo.mouseOverContourIndex;
+            contourChangedSinceLastRepaint = true;
+        }
+    }
+    void HandleLeftMouseDown(Vector3 mousePosition)
+    {
+        if (creator.contour.Count == 0)
+        {
+
+            CreateNewContour();
+        }
+
+        SelectContourUnderMouse();
+
+        if (selectionInfo.mouseIsOverPoint)
+        {
+            SelectPointUnderMouse();
 
             // Contour.AddPoint(mousePosition);
-            Contour.points.Insert(newPointIndex,mousePosition);
-            selectionInfo.pointIndex = newPointIndex;
-             
+            //topContourPath.positionCount++;
+            //topContourPath.SetPosition(topContourPath.positionCount - 1, mousePosition);
         }
-        selectionInfo.pointIsSelected = true;
-        selectionInfo.positionAtStartOfDrag = mousePosition;
-        needsRepaint = true;
+        else
+        {
+            createNewPoint(mousePosition);
+
+        }
+
     }
+
     void HandleLeftMouseUp(Vector3 mousePosition)
     {
         if (selectionInfo.pointIsSelected)
         {
-            Contour.points[selectionInfo.pointIndex] = selectionInfo.positionAtStartOfDrag;
-            Undo.RecordObject(creator,"Move Point");
-            Contour.points[selectionInfo.pointIndex] = mousePosition;
+            SelectedContour.points[selectionInfo.pointIndex] = selectionInfo.positionAtStartOfDrag;
+            Undo.RecordObject(creator, "Move Point");
+            SelectedContour.points[selectionInfo.pointIndex] = mousePosition;
+
             selectionInfo.pointIsSelected = false;
             selectionInfo.pointIndex = -1;
-            needsRepaint = true;
+            contourChangedSinceLastRepaint = true;
         }
     }
-    void HandleLeftMouseDrag(Vector3 mousePosition){
+    void HandleLeftMouseDrag(Vector3 mousePosition)
+    {
         if (selectionInfo.pointIsSelected)
         {
 
-            Contour.points[selectionInfo.pointIndex] = mousePosition;
-            needsRepaint = true;
+            SelectedContour.points[selectionInfo.pointIndex] = mousePosition;
+            contourChangedSinceLastRepaint = true;
         }
     }
-     void updateMouseOverInfo(Vector3 mousePosition){
+    void updateMouseOverInfo(Vector3 mousePosition)
+    {
         int mouseOverPointIndex = -1;
-        for (int i = 0; i < Contour.points.Count; i++)
+        int mouseOverContourIndex = -1;
+        for (int contourIndex = 0; contourIndex < creator.contour.Count; contourIndex++)
         {
-            if (Vector3.Distance(mousePosition,Contour.points[i]) < creator.handleRadius )
+            Contour ct = creator.contour[contourIndex];
+            for (int i = 0; i < ct.points.Count; i++)
             {
-                mouseOverPointIndex = i;
-                break;
+                if (Vector3.Distance(mousePosition, ct.points[i]) < creator.handleRadius)
+                {
+                    mouseOverPointIndex = i;
+                    mouseOverContourIndex = contourIndex;
+                    break;
+                }
             }
         }
-        if (mouseOverPointIndex != selectionInfo.pointIndex)
+        if (mouseOverPointIndex != selectionInfo.pointIndex || mouseOverContourIndex != selectionInfo.mouseOverContourIndex)
         {
-            
+            selectionInfo.mouseOverContourIndex = mouseOverContourIndex;
             selectionInfo.pointIndex = mouseOverPointIndex;
             selectionInfo.mouseIsOverPoint = mouseOverPointIndex != -1;
-            needsRepaint = true;
+            contourChangedSinceLastRepaint = true;
         }
         if (selectionInfo.mouseIsOverPoint)
         {
             selectionInfo.mouseIsOverLine = false;
             selectionInfo.lineIndex = -1;
-        } else
+        }
+        else
         {
             int mouseIsOverLineIndex = -1;
             float closestLineDst = creator.handleRadius;
-            for (int i = 0; i < Contour.points.Count; i++)
+            for (int contourIndex = 0; contourIndex < creator.contour.Count; contourIndex++)
             {
-              Vector3 nextPoint = Contour.points[(i+1)%Contour.points.Count];
-              float dstFromMouseToLine = HandleUtility.DistancePointLine(mousePosition,Contour.points[i],nextPoint);  
-              if (dstFromMouseToLine < closestLineDst)
-              {
-                mouseIsOverLineIndex = i;
-              }
+                Contour ct = creator.contour[contourIndex];
+                for (int i = 0; i < ct.points.Count; i++)
+                {
+                    Vector3 nextPoint = ct.points[(i + 1) % ct.points.Count];
+                    float dstFromMouseToLine = HandleUtility.DistancePointLine(mousePosition, ct.points[i], nextPoint);
+                    if (dstFromMouseToLine < closestLineDst)
+                    {
+                        closestLineDst = dstFromMouseToLine;
+                        mouseIsOverLineIndex = i;
+                        mouseOverContourIndex = contourIndex;
+                    }
+                }
             }
-            if (selectionInfo.lineIndex != mouseIsOverLineIndex)
+            if (selectionInfo.lineIndex != mouseIsOverLineIndex || mouseOverContourIndex != selectionInfo.mouseOverContourIndex)
             {
+                selectionInfo.mouseOverContourIndex = mouseOverContourIndex;
                 selectionInfo.lineIndex = mouseIsOverLineIndex;
-                selectionInfo.mouseIsOverLine = mouseIsOverLineIndex != -1 ;
-                needsRepaint = true;
+                selectionInfo.mouseIsOverLine = mouseIsOverLineIndex != -1;
+                contourChangedSinceLastRepaint = true;
             }
         }
+
     }
 
+    void DeletePointUnderMouse() {
+        Undo.RecordObject(creator,"DeletePoint");
+        SelectedContour.points.RemoveAt(selectionInfo.pointIndex);
+        selectionInfo.pointIsSelected = false;
+        selectionInfo.mouseIsOverPoint = false;
+        contourChangedSinceLastRepaint = true;
+    }
     public float lengthContour(List<Geometry> pathe)
     {
 
@@ -222,111 +295,146 @@ public class ContourEditor : Editor
         return toolPos;
     }
 
-    
+
     void Draw()
     {
-        for (int i = 0; i < Contour.points.Count; i++)
+        for (int contourIndex = 0; contourIndex < creator.contour.Count; contourIndex++)
         {
-            //affiche les lignes verticales
-            Vector3 p = Contour.points[i];
-            Vector3 p2 = p;
-            p2.z = Contour.depth;
-            Handles.color = Color.black;
-            Handles.DrawLine(p, p2);
-
-            if (i == 0)
+            Contour ct = creator.contour[contourIndex];
+            bool contourIsSelected = contourIndex == selectionInfo.selectedContourIndex;
+            bool mouseIsOverContour = contourIndex == selectionInfo.mouseOverContourIndex;
+            for (int i = 0; i < ct.points.Count; i++)
             {
-                Handles.color = Color.green;
-            }
-            else
-            {
-                Handles.color = Color.red;
-            }
-            if (i == selectionInfo.pointIndex)
-            {
-                Handles.color =  selectionInfo.pointIsSelected ?Color.white : Color.blue;
-            }
-            Vector2 newPos = Handles.FreeMoveHandle(Contour[i], .1f, Vector2.zero, Handles.CylinderHandleCap);
-            Handles.DrawSolidDisc(Contour.points[i],Vector3.forward,creator.handleRadius);
-        
-        }
-
-        int numLines = Contour.getNumLines();
-        for (int i = 0; i < numLines; i++)
-        {
-
-            topContourPath.SetPosition(i, Contour.points[i]);
-
-            if (i == selectionInfo.lineIndex)
-            {
-                Handles.color = Color.red;
-            } else {
+                //affiche les lignes verticales
+                Vector3 p = ct.points[i];
+                Vector3 p2 = p;
+                p2.z = ct.depth;
                 Handles.color = Color.black;
-            }
-            Handles.DrawLine(Contour.points[i], Contour.points[(i + 1 ) % Contour.points.Count]);
+                Handles.DrawLine(p, p2);
 
-
-            Vector3 vec3a = Contour.points[i];
-            vec3a.z = Contour.depth;
-            Vector3 vec3b = Contour.points[(i + 1) % Contour.points.Count];
-            vec3b.z = Contour.depth;
-
-            Handles.DrawLine(vec3a, vec3b);
-            
-
-
-        }
-
-
-        creator.contour.calculBasicPath();
-
-        
-       creator.contour.calculateApproche();
-
-        Contour.calculCorrectedPath();
-        
-
-
-        if (Contour.basicPath)
-        {
-            Handles.color = Color.yellow;
-            for (int i = 0; i < Contour.path.Count; i++)
-            {
-               
-                Contour.path[i].Draw();
-            }
-        }
-
-        if (Contour.PathN)
-        {
-            for (int i = 0; i < Contour.pathCorrected.Count; i++)
-            {
-                 if (i == 0 && Contour.typeApproche != TypeApproche.None)
+                // if (i == 0)
+                // {
+                //     Handles.color = Color.green;
+                // }
+                // else
+                // {
+                //     Handles.color = Color.red;
+                // }
+                if (i == selectionInfo.pointIndex && mouseIsOverContour)
                 {
-                    Handles.color = Color.cyan;
+                    Handles.color = selectionInfo.pointIsSelected ? Color.white : Color.blue;
                 } else
                 {
-                    Handles.color = Color.magenta;
+                    Handles.color = contourIsSelected ? Color.green : Color.grey;
                 }
-                Contour.pathCorrected[i].Draw();
+                Vector2 newPos = Handles.FreeMoveHandle(ct[i], .1f, Vector2.zero, Handles.CylinderHandleCap);
+                Handles.DrawSolidDisc(ct.points[i], Vector3.forward, creator.handleRadius);
+
             }
+
+
+            int numLines = ct.getNumLines();
+            for (int i = 0; i < numLines; i++)
+            {
+
+                //topContourPath.SetPosition(i, ct.points[i]);
+
+                if (i == selectionInfo.lineIndex && mouseIsOverContour)
+                {
+                    Handles.color = Color.red;
+                }
+                else
+                {
+                    Handles.color = Color.black;
+                }
+                Handles.DrawLine(ct.points[i], ct.points[(i + 1) % ct.points.Count]);
+
+
+                Vector3 vec3a = ct.points[i];
+                vec3a.z = ct.depth;
+                Vector3 vec3b = ct.points[(i + 1) % ct.points.Count];
+                vec3b.z = ct.depth;
+
+                Handles.DrawLine(vec3a, vec3b);
+
+
+
+            }
+
+
+            ct.calculBasicPath();
+
+
+            ct.calculateApproche();
+
+            ct.calculCorrectedPath();
+
+
+
+            if (ct.basicPath)
+            {
+                Handles.color = Color.yellow;
+                for (int i = 0; i < ct.path.Count; i++)
+                {
+
+                    ct.path[i].Draw();
+                }
+            }
+
+            if (ct.PathN)
+            {
+                for (int i = 0; i < ct.pathCorrected.Count; i++)
+                {
+                    if (i == 0 && ct.typeApproche != TypeApproche.None)
+                    {
+                        Handles.color = Color.cyan;
+                    }
+                    else
+                    {
+                        Handles.color = Color.magenta;
+                    }
+                    ct.pathCorrected[i].Draw();
+                }
+            }
+
+            
+            if (ct.points.Count > 2)
+            {
+                
+            
+                if (ct.basicPath)
+                {
+                    Vector2 toolPos = GetPosAtT(ct.path, ct.t);
+                    Handles.color = Color.yellow;
+                    Handles.DrawWireDisc(toolPos, Vector3.forward, ct.diameter);
+                }
+
+                if (ct.PathN)
+                {
+                    Vector2 toolPosN = GetPosAtT(ct.pathCorrected, ct.t);
+                    Handles.color = Color.magenta;
+                    Handles.DrawWireDisc(toolPosN, Vector3.forward, ct.diameter);
+                }
+            }
+            if (contourChangedSinceLastRepaint)
+            {
+                creator.UpdateMeshRenderer();
+            }
+            contourChangedSinceLastRepaint = false;
         }
-
-        needsRepaint = false;
-
     }
 
 
-   
     void OnEnable()
     {
-        selectionInfo = new();
+        contourChangedSinceLastRepaint = true;
         creator = (ContourCreator)target;
-        if (creator.contour == null)
-        {
-            creator.CreateContour();
-        }
-        Contour = creator.contour;
+
+        selectionInfo = new();
+        // if (creator.contour == null)
+        // {
+        //     creator.CreateContour();
+        // }
 
         if (creator.topContourPath == null)
         {
@@ -342,20 +450,28 @@ public class ContourEditor : Editor
 
 
 
-        Vector3[] points = new Vector3[Contour.points.Count];
-        topContourPath.positionCount = Contour.points.Count;
+        // Vector3[] points = new Vector3[Contour.points.Count];
+        // topContourPath.positionCount = Contour.points.Count;
 
-        for (int i = 0; i < Contour.points.Count; i++)
-        {
-            points[i] = Contour.points[i];
-        }
-        topContourPath.SetPositions(points);
+        // for (int i = 0; i < Contour.points.Count; i++)
+        // {
+        //     points[i] = Contour.points[i];
+        // }
+        // topContourPath.SetPositions(points);
     }
 
-    
 
+    Contour SelectedContour
+    {
+        get
+        {
+            return creator.contour[selectionInfo.selectedContourIndex];
+        }
+    }
     public class SelectionInfo
     {
+        public int selectedContourIndex;
+        public int mouseOverContourIndex;
         public int pointIndex = -1;
         public bool mouseIsOverPoint;
         public bool pointIsSelected;

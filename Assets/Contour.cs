@@ -17,7 +17,7 @@ public class Contour
     List<Vector2> intersection = new();
     public Intersector intersect = new Intersector();
     [SerializeField]
-    public List<Vector2> points;
+    public List<Vector2> points = new();
 
     [SerializeField]
     public int depth = 10;
@@ -58,19 +58,23 @@ public class Contour
     // };
 
 
-    public List<Geometry> path = new List<Geometry>();
+    public List<Geometry> path = new List<Geometry>() ;
 
     public List<Geometry> pathCorrected = new List<Geometry>();
 
     public Contour(Vector2 centre)
     {
-        points = new List<Vector2>
-        {
-            centre+Vector2.left,
-            centre+(Vector2.left+Vector2.up)*.5f,
-            centre + (Vector2.right+Vector2.down)*.5f,
-            centre + Vector2.right
-        };
+        Debug.Log("constructeur");
+        path =  new List<Geometry>();
+        points = new();
+        pathCorrected = new();
+        // points = new List<Vector2>
+        // {
+        //     centre+Vector2.left,
+        //     centre+(Vector2.left+Vector2.up)*.5f,
+        //     centre + (Vector2.right+Vector2.down)*.5f,
+        //     centre + Vector2.right
+        // };
     }
 
     public Vector2 this[int i]
@@ -153,6 +157,10 @@ public class Contour
     }
     public void calculBasicPath()
     {
+        if (points.Count < 2)
+        {
+            return;
+        }
         int numLines = getNumLines();
         Vector2 direction = points[1] - points[0];
         Vector2 normal = new Vector2(-direction.y, direction.x).normalized;
@@ -160,6 +168,7 @@ public class Contour
         //with tool offset
         Vector2 prevPoint = new Vector2();
         bool prevIsCircle = false;
+        path = new();
         path.Clear();
         for (int i = 0 ; i < numLines ; i++)
         {
@@ -283,7 +292,13 @@ public class Contour
     }
 
     public void calculCorrectedPath(){
+        if (points.Count < 2)
+        {
+            return;
+        }
+        pathCorrected = new();
         this.pathCorrected.Clear();
+        intersect = new();
         intersection.Clear();
         int j2 = -1;
         Vector2 ptintersection = Vector2.zero;
@@ -313,6 +328,7 @@ public class Contour
             }
             for (int j = this.path.Count - 1; j > i + 1; j--)
             {
+                intersection = new();
                 intersection.Clear();
                 intersection = intersect.Intersect(this.path[i], this.path[j]);
                 if (intersection.Count > 0)
@@ -359,6 +375,10 @@ public class Contour
     
     public void calculateApproche() 
     {
+        if (points.Count < 2)
+        {
+            return;
+        }
         // approche decalé
         if (this.isClosed())
         {
