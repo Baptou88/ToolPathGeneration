@@ -13,10 +13,6 @@ public class ContourEditor : Editor
     public LineRenderer topContourPath;
     public LineRenderer toolPath;
 
-    public Intersector intersect = new Intersector();
-
-
-
 
     bool contourChangedSinceLastRepaint = false;
 
@@ -78,7 +74,7 @@ public class ContourEditor : Editor
         {
             HandleLeftMouseDown(mousePos);
         }
-        if (guiEvent.type == EventType.MouseUp && guiEvent.button == 0 )
+        if (guiEvent.type == EventType.MouseUp && guiEvent.button == 0)
         {
             HandleLeftMouseUp(mousePos);
         }
@@ -102,7 +98,9 @@ public class ContourEditor : Editor
         {
             SelectContourUnderMouse();
             DeletePointUnderMouse();
-        } else {
+        }
+        else
+        {
             CreateNewContour();
             createNewPoint(pos);
         }
@@ -111,8 +109,8 @@ public class ContourEditor : Editor
     {
         Undo.RecordObject(creator, "Create Contour");
         creator.contour.Add(new Contour(Vector2.zero));
-        selectionInfo.selectedContourIndex = creator.contour.Count-1;
-        
+        selectionInfo.selectedContourIndex = creator.contour.Count - 1;
+
     }
     void createNewPoint(Vector3 mousePosition)
     {
@@ -249,8 +247,9 @@ public class ContourEditor : Editor
 
     }
 
-    void DeletePointUnderMouse() {
-        Undo.RecordObject(creator,"DeletePoint");
+    void DeletePointUnderMouse()
+    {
+        Undo.RecordObject(creator, "DeletePoint");
         SelectedContour.points.RemoveAt(selectionInfo.pointIndex);
         selectionInfo.pointIsSelected = false;
         selectionInfo.mouseIsOverPoint = false;
@@ -323,7 +322,8 @@ public class ContourEditor : Editor
                 if (i == selectionInfo.pointIndex && mouseIsOverContour)
                 {
                     Handles.color = selectionInfo.pointIsSelected ? Color.white : Color.blue;
-                } else
+                }
+                else
                 {
                     Handles.color = contourIsSelected ? Color.green : Color.grey;
                 }
@@ -397,11 +397,11 @@ public class ContourEditor : Editor
                 }
             }
 
-            
+
             if (ct.points.Count > 2)
             {
-                
-            
+
+
                 if (ct.basicPath)
                 {
                     Vector2 toolPos = GetPosAtT(ct.path, ct.t);

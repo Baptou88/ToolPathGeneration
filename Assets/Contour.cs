@@ -33,16 +33,16 @@ public class Contour
 
     public int startVertex = 0;
 
-    [Range(0.0f , 2.0f)]
+    [Range(0.0f, 2.0f)]
     public float diameter = 1;
 
     [SerializeField]
     public bool selfCuttingIntersecr = false;
     [SerializeField]
     public bool basicPath = true;
-    
+
     [SerializeField]
-    public bool PathN = false;
+    public bool PathN = true;
 
     public bool smoothConvexe = true;
 
@@ -58,23 +58,16 @@ public class Contour
     // };
 
 
-    public List<Geometry> path = new List<Geometry>() ;
+    public List<Geometry> path = new List<Geometry>();
 
     public List<Geometry> pathCorrected = new List<Geometry>();
 
     public Contour(Vector2 centre)
     {
-        Debug.Log("constructeur");
-        path =  new List<Geometry>();
+        path = new List<Geometry>();
         points = new();
         pathCorrected = new();
-        // points = new List<Vector2>
-        // {
-        //     centre+Vector2.left,
-        //     centre+(Vector2.left+Vector2.up)*.5f,
-        //     centre + (Vector2.right+Vector2.down)*.5f,
-        //     centre + Vector2.right
-        // };
+
     }
 
     public Vector2 this[int i]
@@ -93,18 +86,16 @@ public class Contour
         }
     }
 
-    public int NumSegments
-    {
-        get
-        {
-            return (points.Count - 4) / 3 + 1;
-        }
-    }
+    // public int NumSegments
+    // {
+    //     get
+    //     {
+    //         return (points.Count - 4) / 3 + 1;
+    //     }
+    // }
 
     public void AddPoint(Vector2 anchorPos)
     {
-        //points.Add(points[points.Count - 1] * 2 - points[points.Count - 2]);
-        //points.Add((points[points.Count - 1] + anchorPos) * .5f);
         points.Add(anchorPos);
     }
 
@@ -117,24 +108,22 @@ public class Contour
     {
         Vector2 deltaMove = pos - points[i];
         points[i] = pos;
-
-        
     }
 
     public void removeLastPoint()
     {
         points.RemoveAt(points.Count - 1);
-        
+
     }
 
-    public bool  isClosed()
+    public bool isClosed()
     {
-        return forceClosed || points[0] == points[points.Count-1];
+        return forceClosed || points[0] == points[points.Count - 1];
     }
 
     public bool isCounterClockwize()
     {
-        
+
         float area = 0;
 
         // Appliquer la formule du shoelace
@@ -153,7 +142,7 @@ public class Contour
 
     public int getNumLines()
     {
-        return  forceClosed ? points.Count : points.Count - 1;
+        return forceClosed ? points.Count : points.Count - 1;
     }
     public void calculBasicPath()
     {
@@ -170,18 +159,18 @@ public class Contour
         bool prevIsCircle = false;
         path = new();
         path.Clear();
-        for (int i = 0 ; i < numLines ; i++)
+        for (int i = 0; i < numLines; i++)
         {
             //Vector2 previousPoint = i == 0 ? this.points[this.points.Count - 1] : this.points[i - 1];
             //Vector2 Point = this.points[i];
             //Vector2 nextPoint = i == this.points.Count - 1 ? this.points[0] : this.points[i + 1];
             //Vector2 nextnextPoint = this.points[(i + 2) % this.points.Count];
 
-            
-            Vector2 previousPoint =     this.points[(i - 1 + this.points.Count + this.startVertex) % this.points.Count];
-            Vector2 Point =             this.points[(i + 0 + this.points.Count + this.startVertex) % this.points.Count];
-            Vector2 nextPoint =         this.points[(i + 1 + this.points.Count + this.startVertex) % this.points.Count];
-            Vector2 nextnextPoint =     this.points[(i + 2 + this.points.Count + this.startVertex) % this.points.Count];
+
+            Vector2 previousPoint = this.points[(i - 1 + this.points.Count + this.startVertex) % this.points.Count];
+            Vector2 Point = this.points[(i + 0 + this.points.Count + this.startVertex) % this.points.Count];
+            Vector2 nextPoint = this.points[(i + 1 + this.points.Count + this.startVertex) % this.points.Count];
+            Vector2 nextnextPoint = this.points[(i + 2 + this.points.Count + this.startVertex) % this.points.Count];
 
 
             direction = nextPoint - Point;
@@ -197,7 +186,7 @@ public class Contour
 
 
 
-            
+
 
 
             Vector2 newA = Point + normal * this.diameter;
@@ -210,7 +199,7 @@ public class Contour
                 {
                     Vector2 previousDirection = Point - previousPoint;
                     float angleprevDirection = -1 * Vector2.SignedAngle(previousDirection, direction);
-                    if ((this.offsetDirection == OffsetDir.Left && angleprevDirection < 0) || (this.offsetDirection == OffsetDir.Right && angleprevDirection > 0) || !this.smoothConvexe )
+                    if ((this.offsetDirection == OffsetDir.Left && angleprevDirection < 0) || (this.offsetDirection == OffsetDir.Right && angleprevDirection > 0) || !this.smoothConvexe)
                     {
 
                         Vector2 bissector = (direction.normalized + previousDirection.normalized).normalized;
@@ -291,14 +280,15 @@ public class Contour
 
     }
 
-    public void calculCorrectedPath(){
+    public void calculCorrectedPath()
+    {
         if (points.Count < 2)
         {
             return;
         }
         pathCorrected = new();
         this.pathCorrected.Clear();
-        intersect = new();
+        intersection = new();
         intersection.Clear();
         int j2 = -1;
         Vector2 ptintersection = Vector2.zero;
@@ -312,7 +302,7 @@ public class Contour
         if (app != null)
         {
             //pathCorrected.AddRange(app.calculateApproche(path[0],this.offsetDirection));
-            List<Geometry> approcheEl = app.calculateApproche(this.path[0],this.offsetDirection);
+            List<Geometry> approcheEl = app.calculateApproche(this.path[0], this.offsetDirection);
             foreach (Geometry item in approcheEl)
             {
                 this.pathCorrected.Add(item);
@@ -330,11 +320,12 @@ public class Contour
             {
                 intersection = new();
                 intersection.Clear();
+                intersect = new();
                 intersection = intersect.Intersect(this.path[i], this.path[j]);
                 if (intersection.Count > 0)
                 {
-                    
-                    if (intersection.Count>1)
+
+                    if (intersection.Count > 1)
                     {
                         intersection = findNearestIntersectionPt(this.path[i], intersection);
                     }
@@ -348,32 +339,32 @@ public class Contour
                         // }
                     }
                     ptintersection = intersection[0];
-                        
-                    
+
+
                     j2 = j;
                     break;
                 }
 
             }
             Geometry g2 = (Geometry)this.path[i].Clone();
-            if(intersection.Count > 0 && i < j2)
+            if (intersection.Count > 0 && i < j2)
             {
                 // modifier le point de fin du cercle
                 g2.modifyEndPoint(ptintersection);
             }
-            if(i == j2)
+            if (i == j2)
             {
                 // modifier le point de debut du cercle
                 g2.modifyBeginPoint(ptintersection);
             }
             this.pathCorrected.Add(g2);
-        
+
 
 
         }
     }
-    
-    public void calculateApproche() 
+
+    public void calculateApproche()
     {
         if (points.Count < 2)
         {
@@ -386,11 +377,11 @@ public class Contour
             {
                 case TypeGeom.Line:
                     Line l = (Line)this.path[0];
-                    Line l1 = new( l.Lerp(0.5f), l.ptb);
-                    Line l2 = new(l.pta,l.Lerp(0.5f));
+                    Line l1 = new(l.Lerp(0.5f), l.ptb);
+                    Line l2 = new(l.pta, l.Lerp(0.5f));
                     this.path[0] = l1;
                     this.path.Add(l2);
-                break;
+                    break;
                 default:
                     throw new NotImplementedException();
 
@@ -400,7 +391,7 @@ public class Contour
 
     public List<Vector2> findNearestIntersectionPt(Geometry g, List<Vector2> p)
     {
-        if (p.Count>2)
+        if (p.Count > 2)
         {
             throw new NotImplementedException("trop de point d'intersections");
         }
@@ -410,7 +401,7 @@ public class Contour
                 Line l = (Line)g;
                 float d1 = Vector2.Distance(l.pta, p[0]);
                 float d2 = Vector2.Distance(l.pta, p[1]);
-                if (d1 > d2) 
+                if (d1 > d2)
                 {
                     Vector2 temp = p[0];
                     p.RemoveAt(0);
@@ -418,13 +409,13 @@ public class Contour
                     return p;
                 }
                 return p;
-                
+
 
             case TypeGeom.Circle:
                 Circle c = (Circle)g;
                 float a1 = Vector2.Angle(c.normal, p[0] - c.center);
                 float a2 = Vector2.Angle(c.normal, p[1] - c.center);
-                if (c.angle < 0) 
+                if (c.angle < 0)
                 {
                     if (a1 > a2)
                     {
@@ -443,12 +434,12 @@ public class Contour
                         p.RemoveAt(0);
                         p.Add(temp);
                     }
-                       return p;
+                    return p;
                 }
-                
+
             default:
                 throw new NotImplementedException();
-                
+
         }
         throw new NotImplementedException();
     }

@@ -12,7 +12,7 @@ public class ContourCreator : MonoBehaviour
     public GameObject cylindre;
     public TextMeshProUGUI text;
     public List<Contour> contour = new();
-   
+
 
     private GameObject selectedSphere;
     private bool isDragging;
@@ -32,12 +32,12 @@ public class ContourCreator : MonoBehaviour
                 GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 Vector3 positionSphere = p;
                 sphere.tag = "Sphere";
-                sphere.transform.position =  positionSphere;
-                sphere.transform.parent = transform ;
+                sphere.transform.position = positionSphere;
+                sphere.transform.parent = transform;
             }
         }
-        
-        
+
+
     }
     public void Update()
     {
@@ -65,7 +65,7 @@ public class ContourCreator : MonoBehaviour
                     isDragging = true;
                 }
             }
-        } 
+        }
         else if (Input.GetMouseButtonUp(0))
         {
             isDragging = false;
@@ -82,7 +82,7 @@ public class ContourCreator : MonoBehaviour
         //         {
         //             contour.MovePoint(i,newPos);
         //             topContourPath.SetPosition(i,newPos);
-                    
+
         //         }
         //     }
         //     selectedSphere.transform.position = newPos;
@@ -90,13 +90,13 @@ public class ContourCreator : MonoBehaviour
 
     }
 
-public void UpdateMeshRenderer()
-{
-    for (int i = 0; i < contour.Count; i++)
+    public void UpdateMeshRenderer()
     {
-        
+        for (int i = 0; i < contour.Count; i++)
+        {
+
+        }
     }
-}
 
 
 }

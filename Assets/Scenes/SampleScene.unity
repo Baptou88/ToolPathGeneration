@@ -453,7 +453,7 @@ Camera:
   far clip plane: 200
   field of view: 60
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 10
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -658,16 +658,16 @@ RectTransform:
   m_GameObject: {fileID: 764424930}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 100, y: 100, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1657585628}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -565.8, y: 45.1}
-  m_SizeDelta: {x: 100, y: 100}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -554.6164, y: 59.93125}
+  m_SizeDelta: {x: 10, y: 10}
+  m_Pivot: {x: 0.49961838, y: 0.50045305}
 --- !u!212 &764424932
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -749,40 +749,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7946ab4814d9deb418201f944cd60e3c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  meshRenderer: {fileID: 1139169531}
+  meshFilter: {fileID: 0}
   topContourPath: {fileID: 1971797694}
   toolPath: {fileID: 1691207049}
   cylindre: {fileID: 2058977321}
   text: {fileID: 0}
   contour:
   - points:
-    - {x: -9.079239, y: -2.3530812}
-    - {x: -4.71036, y: 5.227358}
-    - {x: -1.4120011, y: 5.169492}
-    - {x: -0.31254828, y: 8.004923}
-    - {x: 6.7760296, y: 7.7155933}
-    - {x: 7.528287, y: 4.735497}
-    - {x: 6, y: 2}
-    - {x: 0, y: 2}
-    - {x: 0, y: 0}
-    depth: 10
-    forceClosed: 0
-    t: 0.44
-    offsetDirection: 1
-    startVertex: 0
-    diameter: 1
-    selfCuttingIntersecr: 0
-    basicPath: 0
-    PathN: 1
-    smoothConvexe: 1
-    typeApproche: 2
-    approche:
-      distance: 0.2
-  - points:
-    - {x: -8.764895, y: 5.3567953}
-    - {x: -9.513233, y: 8.901846}
-    - {x: -14.142509, y: 8.004923}
-    - {x: -17.932728, y: 4.6776314}
+    - {x: -16.304388, y: 11.507954}
+    - {x: -16.740387, y: -4.9630737}
+    - {x: -8.747093, y: -5.2052946}
+    - {x: -7.7782087, y: -1.6688681}
+    - {x: -12.041299, y: -0.94220495}
+    - {x: -11.847522, y: 1.8191142}
+    - {x: -8.892426, y: 2.497333}
+    - {x: -9.086203, y: 5.3070965}
+    - {x: -11.508412, y: 5.7430944}
+    - {x: -11.314635, y: 7.341753}
+    - {x: -6.7608805, y: 7.777751}
+    - {x: -6.1311064, y: 10.53907}
     depth: 10
     forceClosed: 1
     t: 0.5
@@ -790,10 +775,35 @@ MonoBehaviour:
     startVertex: 0
     diameter: 1
     selfCuttingIntersecr: 0
-    basicPath: 0
+    basicPath: 1
     PathN: 1
     smoothConvexe: 1
-    typeApproche: 2
+    typeApproche: 0
+    approche:
+      distance: 0.2
+  - points:
+    - {x: 6.1252766, y: 10.2484045}
+    - {x: -1.5289071, y: 1.5768933}
+    - {x: -1.6742398, y: -1.3782029}
+    - {x: 4.526618, y: -1.3782029}
+    - {x: 4.8172827, y: -4.5755196}
+    - {x: 8.450598, y: -4.7692966}
+    - {x: 7.336381, y: -1.4750915}
+    - {x: 8.838152, y: -0.74842834}
+    - {x: 9.322594, y: 1.2377839}
+    - {x: 5.059504, y: 1.9644468}
+    - {x: 8.063044, y: 9.424853}
+    depth: 10
+    forceClosed: 1
+    t: 0.5
+    offsetDirection: 0
+    startVertex: 0
+    diameter: 1
+    selfCuttingIntersecr: 0
+    basicPath: 1
+    PathN: 1
+    smoothConvexe: 1
+    typeApproche: 0
     approche:
       distance: 0.2
   handleRadius: 0.5
@@ -2110,23 +2120,17 @@ LineRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Positions:
-  - {x: -1, y: 0, z: 0}
-  - {x: -0.5, y: 0.5, z: 0}
-  - {x: 0.5, y: -0.5, z: 0}
-  - {x: 1, y: 0, z: 0}
-  - {x: 0.21040785, y: 4.94037, z: 0}
-  - {x: -0.44714713, y: 2.545289, z: 0}
-  - {x: -5.684034, y: 3.0231073, z: 0}
-  - {x: -5.836936, y: 0.50022745, z: 0}
+  - {x: 0, y: 0, z: 0}
+  - {x: 0, y: 0, z: 1}
   m_Parameters:
     serializedVersion: 3
-    widthMultiplier: 0.11119727
+    widthMultiplier: 1
     widthCurve:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0.02840805
-        value: 0.20588303
+        time: 0
+        value: 1
         inSlope: 0
         outSlope: 0
         tangentMode: 0
@@ -2166,7 +2170,7 @@ LineRenderer:
       m_ColorSpace: 0
       m_NumColorKeys: 2
       m_NumAlphaKeys: 2
-    numCornerVertices: 6
+    numCornerVertices: 0
     numCapVertices: 0
     alignment: 0
     textureMode: 0
@@ -2174,7 +2178,7 @@ LineRenderer:
     shadowBias: 0.5
     generateLightingData: 0
   m_MaskInteraction: 0
-  m_UseWorldSpace: 0
+  m_UseWorldSpace: 1
   m_Loop: 0
   m_ApplyActiveColorSpace: 1
 --- !u!4 &1971797695
